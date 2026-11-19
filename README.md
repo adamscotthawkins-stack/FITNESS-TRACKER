@@ -33,3 +33,9 @@ install. Do this regularly: deleting the app from the home screen deletes its da
 Change `index.html`, then raise `VERSION` in `sw.js` (for example `fitness-v2`)
 so phones pick up the new version. Changes show the second time the app is
 opened after an update.
+
+## Credits
+
+The body figures in the workout summary use anatomy drawings from
+[react-muscle-highlighter](https://github.com/soroojshehryar/react-muscle-highlighter)
+(MIT License, Copyright (c) 2024 My Muscle Contributors).
