@@ -1,6 +1,6 @@
 // Offline support. The app opens instantly from the cache, and any update
 // is fetched in the background and used the next time the app is opened.
-const VERSION = 'fitness-v1';
+const VERSION = 'fitness-v2';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png'];
 // Fonts and the spreadsheet library come from these hosts; keep copies for offline use.
 const CDN = ['fonts.googleapis.com', 'fonts.gstatic.com', 'cdnjs.cloudflare.com'];
