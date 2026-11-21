@@ -265,5 +265,10 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none}
 .scan{position:relative;border-radius:16px;overflow:hidden;background:#000;aspect-ratio:4/3}.scan video{width:100%;height:100%;object-fit:cover;display:block}
 .scan-line{position:absolute;left:10%;right:10%;top:50%;height:2px;background:#F43F5E;box-shadow:0 0 12px 2px rgba(244,63,94,.7);animation:scanY 1.8s ease-in-out infinite alternate}@keyframes scanY{from{top:30%}to{top:70%}}
 .sheet-act label.btn{justify-content:center}
+/* how-to cards */
+.how-l{display:inline-flex;align-items:center;gap:5px;font-size:13px;padding:2px 0;margin-left:14px}.how-l svg{width:15px;height:15px}.wm-head .how-l{margin-left:12px;font-size:14px}
+.mtag{font:600 12px var(--f-body);padding:5px 10px;border-radius:99px;background:var(--accent-soft);color:var(--accent)}.mtag.sec{background:var(--raise);color:var(--mute)}
+.how-st{margin:14px 0 4px 20px;padding:0;font-size:16px;line-height:1.5}.how-st li{margin:8px 0;padding-left:4px}.how-st li::marker{font-weight:700;color:var(--accent)}
+.how-b{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border-radius:14px;padding:12px;margin-top:8px;font-size:15px;line-height:1.4}.how-b .ci{width:30px;height:30px;border-radius:9px}.how-b .ci svg{width:16px;height:16px}
 @keyframes rise{from{opacity:0;transform:translateY(12px)}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
