@@ -1,7 +1,7 @@
 /* Start-up: apply the saved plan, run one-time updates, draw, and set up the app */
 applyPlan();
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&SH)shx()});
-if(migratePlan()|migratePU()|migrateCalf()|rollNotes())try{localStorage.setItem('fit1',JSON.stringify(S))}catch(e){}
+if(migratePlan()|migratePU()|migrateCalf()|rollNotes()|migrateGoals())try{localStorage.setItem('fit1',JSON.stringify(S))}catch(e){}
 draw();
 /* no zooming: iPhone ignores user-scalable=no, so block pinch and double-tap zoom directly */
 ['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
