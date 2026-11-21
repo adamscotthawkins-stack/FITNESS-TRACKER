@@ -1,11 +1,13 @@
 # Fitness
 
-A phone app for training, meals and progress: weekly plan, set logging with
-add-weight tips, rest timer, meal plan and recipes, body weight, lift charts,
-calendar, badges and daily stretches.
+A phone app for training, meals and progress:
 
-It's a home-screen web app (PWA). No app store is needed, it works offline,
-and all data stays on the phone.
+- **Training:** weekly plan, set logging with add-weight tips, workout mode (one exercise at a time with big buttons and a rest timer), exercise how-to guides, lift history, swaps, deloads
+- **Progress:** custom goals (any lift or body weight, by a date), monthly recap, this week's muscle map, charts, calendar, badges
+- **Food:** meal plan, food search and barcode scanning (Open Food Facts), saved and recent foods, calorie and protein targets from your profile
+- **Your data:** stays on the phone, with backup reminders and optional automatic backup to a private GitHub repository
+
+It's a home-screen web app (PWA). No app store is needed and it works offline.
 
 ## Install on iPhone
 
@@ -15,9 +17,10 @@ and all data stays on the phone.
 
 ## Your data
 
-Everything is saved on the phone. To keep a copy or move to a new phone, go to
-**Tools → Your data → Download backup**, then **Restore from backup** on the new
-install. Do this regularly: deleting the app from the home screen deletes its data.
+Everything is saved on the phone. Deleting the app from the home screen deletes its data, so back up:
+
+- **Download backup** (Tools → Your data) saves a file through the share sheet, e.g. to iCloud Drive. **Restore from backup** brings it back.
+- **Automatic cloud backup** (Tools) saves to a private GitHub repository you own, once a day and after each workout. Setup steps are in the app. Photos are only in downloaded backups.
 
 ## Files
 

@@ -16,7 +16,7 @@ function prList(){const out=[];for(const n in S.log){let b=0;S.log[n].forEach(x=
 function prCard(){const p=prList().slice(0,5);return `<div class="card"><div class="ch"><span class="ci" style="--c:var(--amber)">${ICO.trophy}</span><h2>Recent PRs</h2></div>${p.length?p.map(x=>`<div class="row"><span class="t"><b>${esc(x.n)}</b><br><span class="mu sm">${fmtD(x.d)}</span></span><span class="r"><b>${x.w}${kg(x.n)} × ${x.r}</b><br>est. max ${Math.round(x.v*10)/10} kg</span></div>`).join(''):'<div class="empty">Beat a previous best on any lift and it shows up here.</div>'}</div>`}
 function overview(){const st=allSets(),we=addDays(wk,6),lw=addDays(wk,-7),cur=st.filter(x=>x.d>=wk&&x.d<=we),prev=st.filter(x=>x.d>=lw&&x.d<wk),ct=ton(cur),pt=ton(prev),ds=dayStats(),days=[0,1,2,3,4,5,6].map(k=>addDays(wk,k)).filter(d=>ds[d]).length,dl=pt?Math.round((ct-pt)/pt*100):null;
 return `<div class="tiles">${tile('Sessions',days+'<small> / '+NT()+'</small>','this week')}${tile('Sets',cur.length,'this week')}${tile('Volume',fmtT(ct),dl==null?'this week':`<span class="pill ${dl>=0?'up':'down'}">${dl>=0?'+':''}${dl}%</span> vs last week`)}</div>
-${ti===6?revCard():''}${goalsSection()}${tonCard()}${checkCard()}${volCard()}${prCard()}${ti===6?'':revCard()}${badgeCard()}`}
+${ti===6?revCard():''}${goalsSection()}${recapCard()}${tonCard()}${checkCard()}${weekMuscleCard()}${prCard()}${ti===6?'':revCard()}${badgeCard()}`}
 
 /* ---------- progress: lifts ---------- */
 function pick(i){S.cx=NK[i];save();draw();try{scrollTo(0,0)}catch(e){}}
