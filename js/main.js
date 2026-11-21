@@ -8,6 +8,8 @@ draw();
 ['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
 document.addEventListener('touchmove',e=>{if(e.touches.length>1||(e.scale!==undefined&&e.scale!==1))e.preventDefault()},{passive:false});
 photosToDb().then(loadPhotos);
+/* automatic cloud backup, once a day */
+setTimeout(()=>{if(cloudCfg()&&(S.cloudAt?iso(new Date(S.cloudAt)):'')!==today)cloudSave(false)},3000);
 if(S.tab==='tools')ldX().catch(()=>{});
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 /* the app can stay open in the background for days: start fresh when the date has changed */

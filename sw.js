@@ -1,6 +1,6 @@
 // Offline support. The app opens instantly from the cache, and any update
 // is fetched in the background and used the next time the app is opened.
-const VERSION = 'fitness-v7';
+const VERSION = 'fitness-v8';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/data.js',
   'js/state.js',
@@ -20,6 +20,7 @@ const CORE = ['./', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/profile.js',
   'js/goals.js',
   'js/wmode.js',
+  'js/cloud.js',
   'js/stretches.js',
   'js/review.js',
   'js/backup.js',
