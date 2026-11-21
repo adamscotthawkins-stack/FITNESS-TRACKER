@@ -26,7 +26,7 @@ rest:{l:'Rest day',x:[
 function strDay(d){const i=(new Date(d+'T12:00').getDay()+6)%7,n=(PLAN[i]&&PLAN[i].n)||'';return /rest/i.test(n)?'rest':/leg|lower/i.test(n)?'legs':/pull/i.test(n)?'pull':'push'}
 function strList(d){const k=strDay(d);return STR.concat(STRX[k].x.map(x=>Object.assign({ex:STRX[k].l},x)))}
 function stg(i){const L=strList(today),h=S.str=S.str||{},d=h[today]=h[today]||{},n=L[i].n;d[n]=!d[n];save();draw();if(L.every(x=>d[x.n]))toast('Stretches done for today')}
-function sgo(i){const x=strList(today)[i];TM=Date.now()+x.sec*1000*(x.sd?2:1)+(x.sd?5000:0);tick();if(!tI)tI=setInterval(tick,500);toast(x.n+(x.sd?': '+x.sec+'s each side. Switch when you’re halfway.':': hold '+x.sec+'s'))}
+function sgo(i){unlockAudio();const x=strList(today)[i];TM=Date.now()+x.sec*1000*(x.sd?2:1)+(x.sd?5000:0);tick();if(!tI)tI=setInterval(tick,500);toast(x.n+(x.sd?': '+x.sec+'s each side. Switch when you’re halfway.':': hold '+x.sec+'s'))}
 function full(d){const h=(S.str||{})[d];return !!h&&strList(d).every(x=>h[x.n])}
 function strStreak(){let n=0,d=full(today)?today:addDays(today,-1);while(full(d)){n++;d=addDays(d,-1)}return n}
 function strOpenReset(){if(S.stoD!==today){S.sto=null;S.stoD=today}}
