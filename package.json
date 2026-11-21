@@ -1,0 +1,8 @@
+{
+  "name": "fitness-tracker",
+  "private": true,
+  "description": "Home-screen web app for training, meals and progress",
+  "scripts": {
+    "test": "node --test"
+  }
+}
