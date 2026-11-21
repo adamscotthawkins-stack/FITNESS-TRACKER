@@ -1,6 +1,6 @@
 // Offline support. The app opens instantly from the cache, and any update
 // is fetched in the background and used the next time the app is opened.
-const VERSION = 'fitness-v11';
+const VERSION = 'fitness-v12';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/data.js',
   'js/state.js',
@@ -30,7 +30,7 @@ const CORE = ['./', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/main.js',
   'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png'];
 // The spreadsheet and barcode libraries come from these hosts; keep copies for offline use.
-const CDN = ['fonts.googleapis.com', 'fonts.gstatic.com', 'cdnjs.cloudflare.com', 'cdn.jsdelivr.net'];
+const CDN = ['fonts.googleapis.com', 'fonts.gstatic.com', 'cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'fastly.jsdelivr.net'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));

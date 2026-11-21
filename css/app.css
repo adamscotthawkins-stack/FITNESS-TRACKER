@@ -263,6 +263,8 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none}
 .amt{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end}.amt input{width:100%;font-size:22px!important;font-weight:600;height:52px}.amt-out{text-align:right;font-size:14px;color:var(--mute);line-height:1.5}.amt-out b{color:var(--ink);font-size:18px}
 .amt-q{flex-wrap:wrap;margin-top:10px}.amt-q .chip{padding:7px 12px;font-size:13px;box-shadow:none;background:var(--surface)}
 .scan{position:relative;border-radius:16px;overflow:hidden;background:#000;aspect-ratio:4/3}.scan video{width:100%;height:100%;object-fit:cover;display:block}
+.scan-box{position:absolute;left:12%;right:12%;top:28%;bottom:28%;border:2.5px solid rgba(255,255,255,.9);border-radius:12px;box-shadow:0 0 0 999px rgba(0,0,0,.28)}
+.sc-type{display:flex;gap:6px;margin-top:10px}.sc-type input{flex:1;min-width:0}.sc-err{color:var(--danger)!important}
 .scan-line{position:absolute;left:10%;right:10%;top:50%;height:2px;background:#F43F5E;box-shadow:0 0 12px 2px rgba(244,63,94,.7);animation:scanY 1.8s ease-in-out infinite alternate}@keyframes scanY{from{top:30%}to{top:70%}}
 .sheet-act label.btn{justify-content:center}
 /* how-to cards */

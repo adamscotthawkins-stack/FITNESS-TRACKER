@@ -46,3 +46,8 @@ opened after an update.
 The body figures in the workout summary use anatomy drawings from
 [react-muscle-highlighter](https://github.com/soroojshehryar/react-muscle-highlighter)
 (MIT License, Copyright (c) 2024 My Muscle Contributors).
+
+Barcode scanning uses the phone's built-in barcode reader when available, otherwise
+[barcode-detector](https://github.com/Sec-ant/barcode-detector) with
+[zxing-wasm](https://github.com/Sec-ant/zxing-wasm) (both MIT License), loaded from jsDelivr
+the first time the scanner opens. Food data comes from [Open Food Facts](https://world.openfoodfacts.org).

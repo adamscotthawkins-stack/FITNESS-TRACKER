@@ -1,8 +1,9 @@
 /* Food: search Open Food Facts (free food database), scan barcodes, and one-tap saved and recent foods.
-   Barcode scanning uses the ZXing library, loaded only when the scanner is opened. */
+   Barcode scanning uses the phone's built-in barcode reader when there is one, otherwise the
+   barcode-detector library (ZXing-C++ in WebAssembly), loaded only when the scanner is opened. */
 const OFF='https://world.openfoodfacts.org',OFF_F='code,product_name,product_name_en,brands,nutriments,serving_quantity,serving_size',
-ZX_URL='https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
-let FS={q:'',res:null,busy:false,err:''},FM=false,ZXR=null;
+BD_URL='https://cdn.jsdelivr.net/npm/barcode-detector@3.2.3/dist/iife/ponyfill.js';
+let FS={q:'',res:null,busy:false,err:''},FM=false,SCAN=null;
 const r1=x=>Math.round(x*10)/10;
 /* an Open Food Facts product -> {code,n,k100,p100,sq,ss}; null when it has no calorie data */
 function offItem(p){if(!p)return null;const N=p.nutriments||{};let k=N['energy-kcal_100g'];if(k==null&&N.energy_100g!=null)k=N.energy_100g/4.184;if(k==null||isNaN(+k))return null;
@@ -43,14 +44,39 @@ ${R.length?`<h3 class="rc">Recent</h3><div class="qrow">${R.map((f,i)=>`<button 
 <details class="rcp"${F.length||R.length||FS.res?'':' open'}><summary><b>Enter manually</b><br><span class="mu">Name, calories and protein</span></summary><div class="fman"><input id="fn" placeholder="Food"><input id="fk" type="number" inputmode="numeric" placeholder="kcal"><input id="fp" type="number" inputmode="decimal" placeholder="g protein"></div><button class="btn sm" style="margin-top:8px" onclick="addF()">Add food</button></details>
 ${T.length?`<h3 class="rc">Added today · ${tk} kcal · ${tp} g protein</h3>${T.map((f,i)=>`<div class="row"><span class="t">${esc(f.n)}${f.g?`<br><span class="mu sm">${f.g} g</span>`:''}</span><span class="r">${f.k} kcal<br>${f.p} g P</span><button class="ib" onclick="favTog(${i})" aria-label="${isFav(f.n)?'Remove from':'Save to'} my foods" aria-pressed="${isFav(f.n)}">${isFav(f.n)?ICO.starOn:ICO.star}</button><button class="ib del" onclick="delF(${i})" aria-label="Remove ${esc(f.n)}">${ICO.x}</button></div>`).join('')}`:''}</div>`}
 /* barcode scanner */
-function ldZX(){return window.ZXing?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement('script');s.src=ZX_URL;s.onload=ok;s.onerror=no;document.head.appendChild(s)})}
-async function scanOpen(){SH={scan:1};const el=document.getElementById('sheet');
-el.innerHTML=`<div class="sheet-bg" onclick="scanClose()"></div><div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="shT"><h2 id="shT" style="margin:0 0 10px">Scan a barcode</h2><div class="scan"><video id="scv" playsinline muted autoplay></video><i class="scan-line"></i></div>
-<div class="mu sm" id="scmsg" style="margin-top:10px">Starting the camera…</div><div class="sheet-act"><label class="btn ghost" for="scf">Use a photo</label><button class="btn ghost" onclick="scanClose()">Cancel</button></div><input id="scf" class="vh" type="file" accept="image/*" capture="environment" onchange="scanPhoto(this)"></div>`;el.hidden=false;
-const msg=t=>{const m=document.getElementById('scmsg');if(m)m.textContent=t};
-try{await ldZX();if(!SH||!SH.scan)return;ZXR=new ZXing.BrowserMultiFormatReader();msg('Point the camera at the barcode and hold steady.');
-await ZXR.decodeFromConstraints({video:{facingMode:'environment'}},document.getElementById('scv'),(res)=>{if(res&&SH&&SH.scan){const c=res.getText();scanClose();foodCode(c)}})}
-catch(e){msg(e&&e.name==='NotAllowedError'?'Camera access is off. Allow it in Settings, or use a photo instead.':window.ZXing?'The camera couldn’t start here. Use a photo of the barcode instead.':'The scanner needs an internet connection the first time. Try again, or search by name.')}}
-function scanClose(){try{ZXR&&ZXR.reset()}catch(e){}ZXR=null;if(SH&&SH.scan)shx()}
-async function scanPhoto(inp){const f=inp.files&&inp.files[0];inp.value='';if(!f)return;const u=URL.createObjectURL(f);try{await ldZX();const r=new ZXing.BrowserMultiFormatReader(),res=await r.decodeFromImageUrl(u);scanClose();foodCode(res.getText())}
-catch(e){toast('No barcode found in that photo. Try again closer, in good light.')}finally{URL.revokeObjectURL(u)}}
+const BD_FORMATS=['ean_13','ean_8','upc_a','upc_e','code_128'];
+function ldBD(){return window.BarcodeDetectionAPI?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement('script');s.src=BD_URL;s.onload=ok;s.onerror=no;document.head.appendChild(s)})}
+/* a detector for shop barcodes: built in if the phone has one that reads them, otherwise the library */
+async function getDetector(){try{if('BarcodeDetector' in window){const f=await window.BarcodeDetector.getSupportedFormats();const use=BD_FORMATS.filter(x=>f.includes(x));if(use.length)return new window.BarcodeDetector({formats:use})}}catch(e){}
+await ldBD();return new BarcodeDetectionAPI.BarcodeDetector({formats:BD_FORMATS})}
+const goodCode=c=>/^\d{8,14}$/.test(c);
+function scanMsg(t,err){const m=document.getElementById('scmsg');if(m){m.textContent=t;m.className='mu sm'+(err?' sc-err':'')}}
+async function scanOpen(){scanStop();SH={scan:1};const S0=SCAN={on:true};const el=document.getElementById('sheet');
+el.innerHTML=`<div class="sheet-bg" onclick="scanClose()"></div><div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="shT"><h2 id="shT" style="margin:0 0 10px">Scan a barcode</h2><div class="scan"><video id="scv" playsinline muted autoplay></video><i class="scan-box"></i><i class="scan-line"></i></div>
+<div class="mu sm" id="scmsg" style="margin-top:10px">Loading the scanner…</div>
+<div class="sc-type"><input id="scn" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Or type the number under the barcode" onkeydown="if(event.key==='Enter'){event.preventDefault();scanTyped()}"><button class="btn sm" onclick="scanTyped()">Look up</button></div>
+<div class="sheet-act"><label class="btn ghost" for="scf">Use a photo</label><button class="btn ghost" onclick="scanClose()">Cancel</button></div><input id="scf" class="vh" type="file" accept="image/*" onchange="scanPhoto(this)"></div>`;el.hidden=false;
+let stage='loading';try{const det=await getDetector();if(SCAN!==S0)return;S0.det=det;stage='camera';scanMsg('Starting the camera…');
+if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw Object.assign(new Error('no camera API'),{name:'NoCamera'});
+const st=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}}});if(SCAN!==S0){st.getTracks().forEach(t=>t.stop());return}S0.stream=st;
+const v=document.getElementById('scv');v.srcObject=st;v.muted=true;v.setAttribute('playsinline','');try{await v.play()}catch(e){}
+/* sharper reads: continuous autofocus, and a little zoom so the phone can be held far enough away to focus */
+try{const tr=st.getVideoTracks()[0],cap=tr.getCapabilities?tr.getCapabilities():{},adv=[];if(cap.focusMode&&cap.focusMode.includes('continuous'))adv.push({focusMode:'continuous'});if(cap.zoom&&cap.zoom.max>=1.5)adv.push({zoom:Math.min(2,cap.zoom.max)});if(adv.length)await tr.applyConstraints({advanced:adv})}catch(e){}
+stage='scan';scanMsg('Hold the barcode inside the box, about 15–20 cm away, in good light.');scanLoop(S0,v)}
+catch(e){if(SCAN!==S0)return;const n=e&&e.name;scanMsg(stage==='loading'?'The scanner couldn’t load. It needs an internet connection the first time. You can still type the number below.':n==='NotAllowedError'||n==='SecurityError'?'Camera access is turned off for this app. Allow the camera in your iPhone Settings, use a photo, or type the number below.':n==='NotFoundError'||n==='OverconstrainedError'?'No camera was found. Use a photo or type the number below.':'The camera couldn’t start ('+(n||'error')+'). Use a photo or type the number below.',true)}}
+/* each frame: mostly the guide-box area enlarged ~2x (reads tilted, slightly blurry barcodes far better), every third frame the whole picture */
+function scanFrame(S0,v,n){const vw=v.videoWidth,vh=v.videoHeight;if(n%3===2)return S0.det.detect(v);const cw=vw*.8,ch=vh*.56,k=Math.max(1,Math.min(2.5,1800/cw)),c=S0.cv||(S0.cv=document.createElement('canvas'));
+c.width=Math.round(cw*k);c.height=Math.round(ch*k);const g=c.getContext('2d');g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';g.drawImage(v,(vw-cw)/2,(vh-ch)/2,cw,ch,0,0,c.width,c.height);return S0.det.detect(c)}
+async function scanLoop(S0,v){let n=0;while(SCAN===S0&&S0.on){if(v.readyState>=2&&v.videoWidth){try{const r=await scanFrame(S0,v,n),hit=r.find(x=>goodCode(x.rawValue));if(hit&&SCAN===S0){scanFound(hit.rawValue);return}}catch(e){}
+if(++n===80&&SCAN===S0)scanMsg('Still looking… Move a little further away so the barcode is sharp, or tilt it to avoid glare.')}await new Promise(r=>setTimeout(r,120))}}
+function scanFound(code){try{navigator.vibrate&&navigator.vibrate(60)}catch(e){}scanClose();foodCode(code)}
+function scanTyped(){const el=document.getElementById('scn'),c=el?el.value.replace(/\D/g,''):'';if(!goodCode(c)){toast('Type the 8 to 14 digits under the barcode.');return}scanClose();foodCode(c)}
+function scanStop(){if(SCAN){SCAN.on=false;if(SCAN.stream)SCAN.stream.getTracks().forEach(t=>{try{t.stop()}catch(e){}})}SCAN=null}
+function scanClose(){scanStop();if(SH&&SH.scan)shx()}
+/* photo of a barcode: try the full image, then a smaller copy (large photos can be slow or miss) */
+async function scanPhoto(inp){const f=inp.files&&inp.files[0];inp.value='';if(!f)return;scanMsg('Reading the photo…');
+try{const det=(SCAN&&SCAN.det)||await getDetector(),bmp=await createImageBitmap(f),tries=[bmp];const s=Math.min(1,1600/Math.max(bmp.width,bmp.height));
+if(s<1){const c=document.createElement('canvas');c.width=Math.round(bmp.width*s);c.height=Math.round(bmp.height*s);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);tries.unshift(c)}
+for(const t of tries){const r=await det.detect(t),hit=r.find(x=>goodCode(x.rawValue));if(hit){scanFound(hit.rawValue);return}}
+scanMsg('No barcode found in that photo. Fill the frame with the barcode, in good light, or type the number below.',true)}
+catch(e){scanMsg('That photo couldn’t be read. Try another, or type the number below.',true)}}
