@@ -10,7 +10,6 @@ const DEF_PLAN=[
 {n:'Lower',f:'Glutes, quads, core',e:[['Hip thrust','4×8'],['Bulgarian split squat','3×10 each'],['Hack squat / leg press','3×12'],['Leg extension','3×15'],['Calf raises','4×15'],['Hanging leg raise','3×12']]},
 {n:'Rest day',f:'Full rest',e:[['Walk, eat well, sleep 8h','—']]}];
 let PLAN=clone(DEF_PLAN);
-const QUOTES=['Push day: the first rep is the hardest. Start it.','Pull day. Consistency beats motivation.','Legs today. Nobody regrets it after.','Recovery is part of the plan. Eat and sleep well.','Upper day: finish the week strong.','Last session of the week. Make it count.','Rest up. Next week, you add weight.'];
 const MEALS=[
 {n:'Breakfast',i:'Porridge with banana, whey scoop, peanut butter',k:550,p:28},
 {n:'Lunch',i:'Chicken, rice and veg, olive oil',k:700,p:42},

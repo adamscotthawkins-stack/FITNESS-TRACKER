@@ -1,6 +1,6 @@
 /* Sunday check-in with Claude */
 /* ---------- weekly review (Claude) ---------- */
-let SMP=null,DLS=null,RV=null,RS=null;
+let DLS=null,RV=null,RS=null;
 function revHtml(t){let h='',ul=false;String(t||'').split('\n').forEach(l=>{l=l.trim();if(!l)return;const b=l.match(/^[-•*]\s+(.*)/);if(b){if(!ul){h+='<ul>';ul=true}h+='<li>'+esc(b[1].replace(/\*\*/g,''))+'</li>'}else{if(ul){h+='</ul>';ul=false}h+='<h4>'+esc(l.replace(/[#*:]/g,'').trim())+'</h4>'}});return (h+(ul?'</ul>':''))||'<div class="mu">Reading your week…</div>'}
 function revPrompt(){const we=addDays(wk,6),lw=addDays(wk,-7),ls=addDays(wk,-1),blk=(a,b)=>{const o={};for(const n in S.log)S.log[n].forEach(x=>{if(x.d>=a&&x.d<=b)(o[n]=o[n]||[]).push(x.d.slice(5)+' '+x.w+'kg×'+x.r+(x.q!=null?' (RIR '+x.q+')':''))});return Object.keys(o).map(n=>'- '+n+': '+o[n].join(', ')).join('\n')||'(nothing logged)'};
 const ds=dayStats(),ns=(a)=>[0,1,2,3,4,5,6].map(k=>addDays(a,k)).filter(d=>ds[d]).length,c={Chest:0,Back:0,Shoulders:0,Arms:0,Legs:0,Core:0};for(const n in S.log)S.log[n].forEach(x=>{if(x.d>=wk&&x.d<=we)c[mg(n)]++});

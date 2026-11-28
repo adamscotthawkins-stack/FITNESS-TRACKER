@@ -15,7 +15,6 @@ function lg(k,d,i){logSet(d,i,parseFloat(document.getElementById('lw'+k).value),
 let TM=0,tI=null;
 function rest(n,d,i){const q=d!=null&&qOn(d)?ssMap(d)[i]:null,s=q&&q.a?60:big(n)?150:90;TM=Date.now()+s*1000;tick();if(!tI)tI=setInterval(tick,500)}
 function tick(){const el=document.getElementById('tm'),r=Math.ceil((TM-Date.now())/1000);if(r<=0){if(TM){TM=0;beep();try{navigator.vibrate&&navigator.vibrate(300)}catch(e){}}el.className='';return}el.className='on';el.innerHTML=`<span>${Math.floor(r/60)}:${String(r%60).padStart(2,'0')}</span><button onclick="TM+=30000;tick()">+30s</button><button onclick="TM=0;tick()">Skip</button>`}
-function r25(x){return Math.round(x/2.5)*2.5}
 function inDl(){return S.dlw===wk}
 function inc(n){return isDB(n)?2:/squat|deadlift|rack pull|hip thrust|leg press|hack|calf/i.test(n)?5:2.5}
 function rnd(w,n){const i=inc(n);return Math.max(0,Math.round(w/i)*i)}
