@@ -1,26 +1,82 @@
 /* Renders the current tab and the tab bar */
-function draw(){
-const d=S.sel==null?ti:S.sel,p=PLAN[ti],c=cnt(ti),pc=p.e.length?Math.round(c/p.e.length*100):0,t=target(),e=eaten(),wa=S.water[today]||0;
-let h='';
-if(S.tab==='today'){
-const rd=p.n==='Rest day',sk=streak();
-h+=`<header class="top"><div class="hello">${greet()}${S.prof&&S.prof.n?', '+esc(S.prof.n):''}</div></header>${consoleCard()}${profNudge()}${bkNudge()}${inDl()?`<div class="card dlb"><b>Deload week.</b> Every lift is pre-filled at ~60% of last time. Same sets and reps, nice and easy. You’ll come back stronger.</div>`:dlDue().due?`<div class="card dlb"><b>Deload week due.</b> ${(D=>D.w+' hard training weeks'+(D.s.length?', and '+D.s.length+' lifts have dipped ('+D.s.slice(0,3).map(esc).join(', ')+')':''))(dlDue())}. Take an easy week at ~60% and the app will pre-fill the lighter weights for you.<br><button class="btn sm" style="margin-top:10px" onclick="startDl()">Start deload this week</button></div>`:''}
-<div class="card"><div class="ch"><span class="ci" style="--c:var(--${rd?'cyan':'indigo'})">${rd?ICO.moon:ICO.dumbbell}</span><div class="ct"><h2>${rd?'Recovery':esc(p.n)}</h2><div class="mu sm">${rd?esc(p.f):esc(p.f)+' · '+c+' of '+p.e.length+' lifts done'}</div></div></div>${rd||S.done['f'+wk+'-'+ti]?'':`<button class="btn wm-start" onclick="wmOpen()">${ICO.play}<span>${c?'Resume workout mode':'Start workout mode'}</span></button>`}${p.n==='Rest day'?'':`<button class="btn sm ${qOn(ti)?'':'ghost'}" style="width:100%;margin:6px 0 4px" onclick="qt()">${qOn(ti)?'Short on time is on · tap for the full session':'Short on time? Cut it to about '+estMin(ti,1)+' min'}</button>`}${lastCard(ti)}${exList(ti)}${PLAN[ti].n==='Rest day'?'':S.done['f'+wk+'-'+ti]?`<div style="margin-top:12px;text-align:center;font-weight:600;color:var(--ac)">Workout completed · <button class="link" onclick="sumSheet()">View summary</button></div>`:`<button class="btn" style="width:100%;margin-top:12px;${pc===100?'':'opacity:.45'}" ${pc===100?'':'disabled'} onclick="fin()">Complete workout</button>`}${PLAN[ti].n==='Rest day'?'':'<div class="mu sm" style="margin-top:10px">Weights and reps are pre-filled from last time, so a matching set is one tap. RIR = reps in reserve: how many more you could have done (0 = failure).</div>'}</div>${strCard()}${ti===6?revCard():''}
-${wiCard()}${hid('nutrition')?'':`<div class="card"><div class="ch"><span class="ci" style="--c:var(--orange)">${ICO.bowl}</span><div class="ct"><h2>Nutrition</h2><div class="mu sm">${e} of ${t} kcal · ${GOALS[S.goal][0]}</div></div><button class="link" onclick="tab('meals')">Meals</button></div><div class="bar or"><i style="width:${Math.min(100,e/t*100)}%"></i></div></div>`}
-${hid('water')?'':`<div class="card"><div class="ch"><span class="ci" style="--c:var(--cyan)">${ICO.drop}</span><div class="ct"><h2>Water</h2><div class="mu sm">${wa} of 8 glasses</div></div></div><div class="drops">${[1,2,3,4,5,6,7,8].map(n=>`<button class="drop ${wa>=n?'on':''}" onclick="wt(${n})" aria-label="Glass ${n}"></button>`).join('')}</div></div>`}
-<div class="stats card"><div><b>${streak()}</b><span class="mu">day streak</span></div><div><b>${DAYS.map((_,i)=>cnt(i)>0?1:0).reduce((a,b)=>a+b)}</b><span class="mu">of ${NT()} sessions</span></div><div><b>${S.weights.length?S.weights[S.weights.length-1].w:'–'}</b><span class="mu">kg latest</span></div></div>`}
-if(S.tab==='plan'){
-h+=`<h1>Weekly plan</h1><div class="mu">${NT()} sessions a week. Tap a day to see or edit it.</div><div class="chips days" style="margin-top:10px">${DAYS.map((x,i)=>`<button class="chip${d===i?' on':''}${i===ti?' td':''}" onclick="sel(${i})" aria-label="${x}${i===ti?', today':''}">${x}</button>`).join('')}</div>
-${S.pe?planEditor(d):`<div class="card"><div class="ed-head"><h2>${esc(PLAN[d].n)}</h2><button class="btn sm ghost" onclick="pedit(true)">Edit</button></div><div class="mu">${esc(PLAN[d].f)} · ${cnt(d)}/${PLAN[d].e.length} done</div>${exList(d,1)}</div>`}
-<div class="card mu">Muscle-building rules: add weight or a rep each week when you hit the top of the rep range on every set. Rest 2–3 min on big lifts, 60–90 sec on the rest. Keep 1–2 reps in reserve (RIR), except on the last set. Log RIR and the app will tell you when a weight has got easy.</div>`}
-if(S.tab==='meals'){
-const pr=protTarget();
-h+=`<h1>Meal plan</h1><div class="chips" style="margin:10px 0">${Object.keys(GOALS).map(g=>`<button class="chip ${S.goal===g?'on':''}" onclick="goal('${g}')">${GOALS[g][0]}</button>`).join('')}</div>
-<div class="card"><div class="ch"><span class="ci" style="--c:var(--orange)">${ICO.bowl}</span><div class="ct"><h2>Today’s fuel</h2><div class="mu sm">${GOALS[S.goal][0]} · ${t} kcal and ${pr}g protein a day</div></div></div><div class="macros">${mring(e,t,'kcal','Calories','#F97316','#F43F5E')}${mring(prot(),pr,'g','Protein','#8B5CF6','#4F46E5')}</div>
-${MEALS.map((_,i)=>{const m=mealAt(i),on=S.meals['m'+today+i];return `<div class="meal ${on?'done':''}"><label class="row"><input type="checkbox" ${on?'checked':''} onchange="tm(${i})"><span class="t"><b>${m.n}</b>${m.sw?'<span class="tag">Swapped</span>':''}<br><span class="mu">${esc(m.i)}</span></span><span class="r">${Math.round(m.k*sc())} kcal<br>${Math.round(m.p*sc())}g P</span></label><div class="meal-act"><button class="link" onclick="swo(${i})" aria-expanded="${SW===i}">${SW===i?'Close':'Swap for a recipe'}</button></div>${SW===i?swPicker(i):''}</div>`}).join('')}</div>
+function draw() {
+  const d = S.sel == null ? todayIdx : S.sel,
+    p = PLAN[todayIdx],
+    c = doneCount(todayIdx),
+    pc = p.e.length ? Math.round((c / p.e.length) * 100) : 0,
+    t = target(),
+    e = eaten(),
+    wa = S.water[today] || 0;
+  let h = '';
+  if (S.tab === 'today') {
+    const rd = p.n === 'Rest day',
+      sk = streak();
+    h += `<header class="top"><div class="hello">${greet()}${S.prof && S.prof.n ? ', ' + esc(S.prof.n) : ''}</div></header>${consoleCard()}${profNudge()}${bkNudge()}${inDl() ? `<div class="card dlb"><b>Deload week.</b> Every lift is pre-filled at ~60% of last time. Same sets and reps, nice and easy. You’ll come back stronger.</div>` : dlDue().due ? `<div class="card dlb"><b>Deload week due.</b> ${(D => D.w + ' hard training weeks' + (D.s.length ? ', and ' + D.s.length + ' lifts have dipped (' + D.s.slice(0, 3).map(esc).join(', ') + ')' : ''))(dlDue())}. Take an easy week at ~60% and the app will pre-fill the lighter weights for you.<br><button class="btn sm" style="margin-top:10px" onclick="startDl()">Start deload this week</button></div>` : ''}
+<div class="card"><div class="ch"><span class="ci" style="--c:var(--${rd ? 'cyan' : 'indigo'})">${rd ? ICO.moon : ICO.dumbbell}</span><div class="ct"><h2>${rd ? 'Recovery' : esc(p.n)}</h2><div class="mu sm">${rd ? esc(p.f) : esc(p.f) + ' · ' + c + ' of ' + p.e.length + ' lifts done'}</div></div></div>${rd || S.done['f' + weekKey + '-' + todayIdx] ? '' : `<button class="btn wm-start" onclick="wmOpen()">${ICO.play}<span>${c ? 'Resume workout mode' : 'Start workout mode'}</span></button>`}${p.n === 'Rest day' ? '' : `<button class="btn sm ${qOn(todayIdx) ? '' : 'ghost'}" style="width:100%;margin:6px 0 4px" onclick="toggleShortSession()">${qOn(todayIdx) ? 'Short on time is on · tap for the full session' : 'Short on time? Cut it to about ' + estMin(todayIdx, 1) + ' min'}</button>`}${lastCard(todayIdx)}${exList(todayIdx)}${PLAN[todayIdx].n === 'Rest day' ? '' : S.done['f' + weekKey + '-' + todayIdx] ? `<div style="margin-top:12px;text-align:center;font-weight:600;color:var(--ac)">Workout completed · <button class="link" onclick="sumSheet()">View summary</button></div>` : `<button class="btn" style="width:100%;margin-top:12px;${pc === 100 ? '' : 'opacity:.45'}" ${pc === 100 ? '' : 'disabled'} onclick="finishWorkout()">Complete workout</button>`}${PLAN[todayIdx].n === 'Rest day' ? '' : '<div class="mu sm" style="margin-top:10px">Weights and reps are pre-filled from last time, so a matching set is one tap. RIR = reps in reserve: how many more you could have done (0 = failure).</div>'}</div>${strCard()}${todayIdx === 6 ? revCard() : ''}
+${wiCard()}${isHidden('nutrition') ? '' : `<div class="card"><div class="ch"><span class="ci" style="--c:var(--orange)">${ICO.bowl}</span><div class="ct"><h2>Nutrition</h2><div class="mu sm">${e} of ${t} kcal · ${GOALS[S.goal][0]}</div></div><button class="link" onclick="tab('meals')">Meals</button></div><div class="bar or"><i style="width:${Math.min(100, (e / t) * 100)}%"></i></div></div>`}
+${isHidden('water') ? '' : `<div class="card"><div class="ch"><span class="ci" style="--c:var(--cyan)">${ICO.drop}</span><div class="ct"><h2>Water</h2><div class="mu sm">${wa} of 8 glasses</div></div></div><div class="drops">${[1, 2, 3, 4, 5, 6, 7, 8].map(n => `<button class="drop ${wa >= n ? 'on' : ''}" onclick="setWater(${n})" aria-label="Glass ${n}"></button>`).join('')}</div></div>`}
+<div class="stats card"><div><b>${streak()}</b><span class="mu">day streak</span></div><div><b>${DAYS.map((_, i) => (doneCount(i) > 0 ? 1 : 0)).reduce((a, b) => a + b)}</b><span class="mu">of ${trainingDays()} sessions</span></div><div><b>${S.weights.length ? S.weights[S.weights.length - 1].w : '–'}</b><span class="mu">kg latest</span></div></div>`;
+  }
+  if (S.tab === 'plan') {
+    h += `<h1>Weekly plan</h1><div class="mu">${trainingDays()} sessions a week. Tap a day to see or edit it.</div><div class="chips days" style="margin-top:10px">${DAYS.map((x, i) => `<button class="chip${d === i ? ' on' : ''}${i === todayIdx ? ' td' : ''}" onclick="selectDay(${i})" aria-label="${x}${i === todayIdx ? ', today' : ''}">${x}</button>`).join('')}</div>
+${S.pe ? planEditor(d) : `<div class="card"><div class="ed-head"><h2>${esc(PLAN[d].n)}</h2><button class="btn sm ghost" onclick="setPlanEdit(true)">Edit</button></div><div class="mu">${esc(PLAN[d].f)} · ${doneCount(d)}/${PLAN[d].e.length} done</div>${exList(d, 1)}</div>`}
+<div class="card mu">Muscle-building rules: add weight or a rep each week when you hit the top of the rep range on every set. Rest 2–3 min on big lifts, 60–90 sec on the rest. Keep 1–2 reps in reserve (RIR), except on the last set. Log RIR and the app will tell you when a weight has got easy.</div>`;
+  }
+  if (S.tab === 'meals') {
+    const pr = protTarget();
+    h += `<h1>Meal plan</h1><div class="chips" style="margin:10px 0">${Object.keys(GOALS)
+      .map(
+        g => `<button class="chip ${S.goal === g ? 'on' : ''}" onclick="setGoal('${g}')">${GOALS[g][0]}</button>`
+      )
+      .join('')}</div>
+<div class="card"><div class="ch"><span class="ci" style="--c:var(--orange)">${ICO.bowl}</span><div class="ct"><h2>Today’s fuel</h2><div class="mu sm">${GOALS[S.goal][0]} · ${t} kcal and ${pr}g protein a day</div></div></div><div class="macros">${mring(e, t, 'kcal', 'Calories', '#F97316', '#F43F5E')}${mring(prot(), pr, 'g', 'Protein', '#8B5CF6', '#4F46E5')}</div>
+${MEALS.map((_, i) => {
+  const m = mealAt(i),
+    on = S.meals['m' + today + i];
+  return `<div class="meal ${on ? 'done' : ''}"><label class="row"><input type="checkbox" ${on ? 'checked' : ''} onchange="toggleMeal(${i})"><span class="t"><b>${m.n}</b>${m.sw ? '<span class="tag">Swapped</span>' : ''}<br><span class="mu">${esc(m.i)}</span></span><span class="r">${Math.round(m.k * mealScale())} kcal<br>${Math.round(m.p * mealScale())}g P</span></label><div class="meal-act"><button class="link" onclick="toggleMealSwap(${i})" aria-expanded="${MEAL_SWAP_OPEN === i}">${MEAL_SWAP_OPEN === i ? 'Close' : 'Swap for a recipe'}</button></div>${MEAL_SWAP_OPEN === i ? swPicker(i) : ''}</div>`;
+}).join('')}</div>
 ${foodCard()}
-<div class="card"><div class="ch"><span class="ci" style="--c:var(--orange)">${ICO.book}</span><h2>Recipes</h2></div><div class="mu sm">Approximate per serving. Tap to open.</div>${['Breakfast','Lunch','Dinner','Snacks and shakes'].map(c=>`<h3 class="rc">${c}</h3>${RECIPES.filter(r=>r.w===c).map(r=>`<details class="rcp"><summary><b>${r.n}</b><span class="mu"> · ${r.t}</span><br><span class="mu">${Math.round(r.k*sc())} kcal · ${Math.round(r.p*sc())}g P</span></summary><div class="mu" style="margin-top:6px"><b>Ingredients</b></div><ul>${r.ing.map(x=>`<li>${x}</li>`).join('')}</ul><div class="mu"><b>Method</b></div><ol>${r.st.map(x=>`<li>${x}</li>`).join('')}</ol></details>`).join('')}`).join('')}</div>
-<div class="card mu">${prof()?`Targets come from your profile (${bodyW()} kg, ${S.prof.h} cm, age ${S.prof.age}) and update each time you log your weight.`:`These are the plan’s standard targets. <button class="link" onclick="goProf()">Set up your profile</button> to fit them to you.`} ${S.goal==='bulk'?'Aim to gain about 0.25–0.5 kg a week: if you gain faster, drop ~150 kcal; if nothing moves for 2 weeks, add ~150.':S.goal==='cut'?'Aim to lose about 0.5–1% of your body weight a week, and keep protein high to hold on to muscle.':'Aim to keep your weight within about 1 kg of where it is now.'}</div>`}
-if(S.tab==='progress')h+=progressView();
-if(S.tab==='tools')h+=toolsCard();if(S.tab==='coach')h+=coachView();const AP=document.getElementById('app');AP.innerHTML=h;if(ENT){ENT=0;AP.classList.remove('enter');void AP.offsetWidth;AP.classList.add('enter')}
-document.getElementById('nav').innerHTML=[['today','Today'],['plan','Plan'],['meals','Meals'],['progress','Progress'],['coach','Coach'],['tools','Tools']].map(x=>`<button class="${S.tab===x[0]?'on':''}" onclick="tab('${x[0]}')" ${S.tab===x[0]?'aria-current="page"':''}><span class="ico">${IC(x[0])}</span>${x[1]}</button>`).join('');if(WM)wmDraw()}
+<div class="card"><div class="ch"><span class="ci" style="--c:var(--orange)">${ICO.book}</span><h2>Recipes</h2></div><div class="mu sm">Approximate per serving. Tap to open.</div>${[
+      'Breakfast',
+      'Lunch',
+      'Dinner',
+      'Snacks and shakes'
+    ]
+      .map(
+        c =>
+          `<h3 class="rc">${c}</h3>${RECIPES.filter(r => r.w === c)
+            .map(
+              r =>
+                `<details class="rcp"><summary><b>${r.n}</b><span class="mu"> · ${r.t}</span><br><span class="mu">${Math.round(r.k * mealScale())} kcal · ${Math.round(r.p * mealScale())}g P</span></summary><div class="mu" style="margin-top:6px"><b>Ingredients</b></div><ul>${r.ing.map(x => `<li>${x}</li>`).join('')}</ul><div class="mu"><b>Method</b></div><ol>${r.st.map(x => `<li>${x}</li>`).join('')}</ol></details>`
+            )
+            .join('')}`
+      )
+      .join('')}</div>
+<div class="card mu">${prof() ? `Targets come from your profile (${bodyW()} kg, ${S.prof.h} cm, age ${S.prof.age}) and update each time you log your weight.` : `These are the plan’s standard targets. <button class="link" onclick="goProf()">Set up your profile</button> to fit them to you.`} ${S.goal === 'bulk' ? 'Aim to gain about 0.25–0.5 kg a week: if you gain faster, drop ~150 kcal; if nothing moves for 2 weeks, add ~150.' : S.goal === 'cut' ? 'Aim to lose about 0.5–1% of your body weight a week, and keep protein high to hold on to muscle.' : 'Aim to keep your weight within about 1 kg of where it is now.'}</div>`;
+  }
+  if (S.tab === 'progress') h += progressView();
+  if (S.tab === 'tools') h += toolsCard();
+  if (S.tab === 'coach') h += coachView();
+  const AP = document.getElementById('app');
+  AP.innerHTML = h;
+  if (ANIMATE_ENTRY) {
+    ANIMATE_ENTRY = 0;
+    AP.classList.remove('enter');
+    void AP.offsetWidth;
+    AP.classList.add('enter');
+  }
+  document.getElementById('nav').innerHTML = [
+    ['today', 'Today'],
+    ['plan', 'Plan'],
+    ['meals', 'Meals'],
+    ['progress', 'Progress'],
+    ['coach', 'Coach'],
+    ['tools', 'Tools']
+  ]
+    .map(
+      x =>
+        `<button class="${S.tab === x[0] ? 'on' : ''}" onclick="tab('${x[0]}')" ${S.tab === x[0] ? 'aria-current="page"' : ''}><span class="ico">${IC(x[0])}</span>${x[1]}</button>`
+    )
+    .join('');
+  if (WM) wmDraw();
+}

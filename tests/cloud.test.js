@@ -6,7 +6,15 @@ const { loadApp } = require('./load');
 function setup(fetchImpl) {
   const app = loadApp();
   const store = {};
-  app.ctx.localStorage = { getItem: k => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: k => { delete store[k]; } };
+  app.ctx.localStorage = {
+    getItem: k => (k in store ? store[k] : null),
+    setItem: (k, v) => {
+      store[k] = String(v);
+    },
+    removeItem: k => {
+      delete store[k];
+    }
+  };
   app.ctx.fetch = fetchImpl;
   app.run('draw=function(){};toast=function(m){globalThis.__toast=m}');
   return { app, store };
@@ -21,7 +29,9 @@ test('cloud backup updates backup.json in the repository, without photos or the 
   };
   const { app, store } = setup(fetch);
   store['fit-cloud'] = JSON.stringify({ repo: 'me/fitness-data', token: 'github_pat_SECRET_1234567890' });
-  app.run("S.log={'Squat':[{d:'2026-11-18',w:100,r:5}]};S.photos=[{d:'2026-11-01',k:'p1'}];S.prof={n:'Sam',age:30,h:178};");
+  app.run(
+    "S.log={'Squat':[{d:'2026-11-18',w:100,r:5}]};S.photos=[{d:'2026-11-01',k:'p1'}];S.prof={n:'Sam',age:30,h:178};"
+  );
   const ok = await app.run('cloudSave(true)');
   assert.equal(ok, true);
   assert.equal(calls.length, 2);
@@ -41,7 +51,10 @@ test('cloud backup updates backup.json in the repository, without photos or the 
 
 test('first cloud backup creates the file', async () => {
   const calls = [];
-  const fetch = async (url, opt = {}) => { calls.push(opt); return opt.method ? { ok: true, status: 201, json: async () => ({}) } : { ok: false, status: 404 }; };
+  const fetch = async (url, opt = {}) => {
+    calls.push(opt);
+    return opt.method ? { ok: true, status: 201, json: async () => ({}) } : { ok: false, status: 404 };
+  };
   const { app, store } = setup(fetch);
   store['fit-cloud'] = JSON.stringify({ repo: 'me/fitness-data', token: 'github_pat_SECRET_1234567890' });
   assert.equal(await app.run('cloudSave(false)'), true);
@@ -59,7 +72,9 @@ test('a rejected token is reported and nothing is marked as backed up', async ()
 });
 
 test('no connection: a friendly message, retried next time', async () => {
-  const fetch = async () => { throw new TypeError('Failed to fetch'); };
+  const fetch = async () => {
+    throw new TypeError('Failed to fetch');
+  };
   const { app, store } = setup(fetch);
   store['fit-cloud'] = JSON.stringify({ repo: 'me/fitness-data', token: 'github_pat_SECRET_1234567890' });
   assert.equal(await app.run('cloudSave(false)'), false);
@@ -68,7 +83,7 @@ test('no connection: a friendly message, retried next time', async () => {
 
 test('names with accents survive the cloud copy', () => {
   const { run } = loadApp();
-  const enc = run("b64(JSON.stringify({n:'Zoë · 100 kg × 5'}))");
+  const enc = run("toBase64(JSON.stringify({n:'Zoë · 100 kg × 5'}))");
   assert.equal(JSON.parse(Buffer.from(enc, 'base64').toString('utf8')).n, 'Zoë · 100 kg × 5');
 });
 

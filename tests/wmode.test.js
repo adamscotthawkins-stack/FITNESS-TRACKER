@@ -23,9 +23,14 @@ test('plates are only shown for barbell lifts', () => {
 
 test('workout mode starts from the add-weight tip, or the last set logged today', () => {
   const app = loadApp('2026-11-18T12:00:00'); // Wednesday: Legs, first exercise Squat
-  app.ctx.__h = [{ d: '2026-11-11', w: 100, r: 8 }, { d: '2026-11-11', w: 100, r: 8 }, { d: '2026-11-11', w: 100, r: 8 }, { d: '2026-11-11', w: 100, r: 8 }];
+  app.ctx.__h = [
+    { d: '2026-11-11', w: 100, r: 8 },
+    { d: '2026-11-11', w: 100, r: 8 },
+    { d: '2026-11-11', w: 100, r: 8 },
+    { d: '2026-11-11', w: 100, r: 8 }
+  ];
   app.run('S.log={Squat:__h};S.alt={};S.dlw=null;WM={i:0};wmSeed(0)');
-  assert.equal(app.run('PLAN[ti].e[0][0]'), 'Squat');
+  assert.equal(app.run('PLAN[todayIdx].e[0][0]'), 'Squat');
   assert.deepEqual(JSON.parse(app.run('JSON.stringify([WM.w,WM.r])')), [105, 6]);
   app.run("S.log.Squat.push({d:'2026-11-18',w:102.5,r:7});wmSeed(0)");
   assert.deepEqual(JSON.parse(app.run('JSON.stringify([WM.w,WM.r])')), [102.5, 7]);

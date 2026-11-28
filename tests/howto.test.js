@@ -5,9 +5,11 @@ const { loadApp } = require('./load');
 
 test('every planned exercise and swap option has a guide', () => {
   const { run } = loadApp();
-  const names = JSON.parse(run(`JSON.stringify([...new Set([].concat(
+  const names = JSON.parse(
+    run(`JSON.stringify([...new Set([].concat(
     DEF_PLAN.flatMap(d=>d.n==='Rest day'?[]:d.e.map(e=>e[0])),
-    Object.keys(ALT), ...Object.values(ALT), ['Pull-ups','Close-grip bench press','Calf raises (leg press)']))])`));
+    Object.keys(ALT), ...Object.values(ALT), ['Pull-ups','Close-grip bench press','Calf raises (leg press)']))])`)
+  );
   assert.ok(names.length > 80);
   const missing = names.filter(n => run(`!howOf(${JSON.stringify(n)})`));
   assert.deepEqual(missing, []);

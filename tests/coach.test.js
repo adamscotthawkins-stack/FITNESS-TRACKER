@@ -7,31 +7,98 @@ const { loadApp } = require('./load');
 function app() {
   const a = loadApp('2026-11-18T12:00:00'); // Wednesday
   const store = {};
-  a.ctx.localStorage = { getItem: k => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: k => { delete store[k]; } };
-  a.run("S.plan=null;applyPlan();S.alt={};S.prog={};S.progDef={};S.goals=[];draw=function(){};toast=function(m){globalThis.__toast=m}");
+  a.ctx.localStorage = {
+    getItem: k => (k in store ? store[k] : null),
+    setItem: (k, v) => {
+      store[k] = String(v);
+    },
+    removeItem: k => {
+      delete store[k];
+    }
+  };
+  a.run(
+    'S.plan=null;applyPlan();S.alt={};S.prog={};S.progDef={};S.goals=[];draw=function(){};toast=function(m){globalThis.__toast=m}'
+  );
   return { ...a, store };
 }
-const check = (a, name, inp) => { a.ctx.__i = inp; return a.run(`coCheck(${JSON.stringify(name)},__i)`); };
+const check = (a, name, inp) => {
+  a.ctx.__i = inp;
+  return a.run(`coCheck(${JSON.stringify(name)},__i)`);
+};
 
 test('plan proposals are checked against the plan', () => {
   const a = app();
-  assert.equal(check(a, 'propose_plan_changes', { summary: 'Swap squat', changes: [{ action: 'swap_exercise', day: 'Wed', exercise: 'Squat', new_exercise: 'Hack squat', sets_reps: '4×8–10' }] }), '');
-  assert.match(check(a, 'propose_plan_changes', { summary: 'x', changes: [{ action: 'swap_exercise', day: 'Wed', exercise: 'Bench press (heavy)', new_exercise: 'X' }] }), /not on Wed/);
-  assert.match(check(a, 'propose_plan_changes', { summary: 'x', changes: [{ action: 'set_sets_reps', day: 'Mon', exercise: 'Lateral raises', sets_reps: 'lots' }] }), /3×8–12/);
-  assert.match(check(a, 'propose_plan_changes', { summary: 'x', changes: [{ action: 'add_exercise', day: 'Thu', new_exercise: 'Plank', sets_reps: '3×30' }] }), /rest day/);
+  assert.equal(
+    check(a, 'propose_plan_changes', {
+      summary: 'Swap squat',
+      changes: [
+        {
+          action: 'swap_exercise',
+          day: 'Wed',
+          exercise: 'Squat',
+          new_exercise: 'Hack squat',
+          sets_reps: '4×8–10'
+        }
+      ]
+    }),
+    ''
+  );
+  assert.match(
+    check(a, 'propose_plan_changes', {
+      summary: 'x',
+      changes: [{ action: 'swap_exercise', day: 'Wed', exercise: 'Bench press (heavy)', new_exercise: 'X' }]
+    }),
+    /not on Wed/
+  );
+  assert.match(
+    check(a, 'propose_plan_changes', {
+      summary: 'x',
+      changes: [{ action: 'set_sets_reps', day: 'Mon', exercise: 'Lateral raises', sets_reps: 'lots' }]
+    }),
+    /3×8–12/
+  );
+  assert.match(
+    check(a, 'propose_plan_changes', {
+      summary: 'x',
+      changes: [{ action: 'add_exercise', day: 'Thu', new_exercise: 'Plank', sets_reps: '3×30' }]
+    }),
+    /rest day/
+  );
   // later changes see the earlier ones: make Thursday a training day, then add to it
-  assert.equal(check(a, 'propose_plan_changes', { summary: 'x', changes: [{ action: 'make_training_day', day: 'Thu', day_name: 'Arms' }, { action: 'add_exercise', day: 'Thu', new_exercise: 'EZ-bar curl', sets_reps: '3×10–12' }] }), '');
+  assert.equal(
+    check(a, 'propose_plan_changes', {
+      summary: 'x',
+      changes: [
+        { action: 'make_training_day', day: 'Thu', day_name: 'Arms' },
+        { action: 'add_exercise', day: 'Thu', new_exercise: 'EZ-bar curl', sets_reps: '3×10–12' }
+      ]
+    }),
+    ''
+  );
   assert.match(check(a, 'propose_plan_changes', { summary: 'x', changes: [] }), /at least one/);
-  assert.match(check(a, 'propose_plan_changes', { summary: 'x', changes: [{ action: 'explode', day: 'Mon' }] }), /unknown action/);
+  assert.match(
+    check(a, 'propose_plan_changes', { summary: 'x', changes: [{ action: 'explode', day: 'Mon' }] }),
+    /unknown action/
+  );
 });
 
 test('applying a plan proposal changes the plan', () => {
   const a = app();
-  a.ctx.__i = { summary: 'Shoulder-friendly Monday', changes: [
-    { action: 'swap_exercise', day: 'Mon', exercise: 'Bench press (heavy)', new_exercise: 'DB bench press', sets_reps: '4×8–10' },
-    { action: 'remove_exercise', day: 'Mon', exercise: 'Overhead triceps extension' },
-    { action: 'add_exercise', day: 'Mon', new_exercise: 'Face pulls', sets_reps: '3×15–20', position: 2 },
-    { action: 'make_rest_day', day: 'Sat' }] };
+  a.ctx.__i = {
+    summary: 'Shoulder-friendly Monday',
+    changes: [
+      {
+        action: 'swap_exercise',
+        day: 'Mon',
+        exercise: 'Bench press (heavy)',
+        new_exercise: 'DB bench press',
+        sets_reps: '4×8–10'
+      },
+      { action: 'remove_exercise', day: 'Mon', exercise: 'Overhead triceps extension' },
+      { action: 'add_exercise', day: 'Mon', new_exercise: 'Face pulls', sets_reps: '3×15–20', position: 2 },
+      { action: 'make_rest_day', day: 'Sat' }
+    ]
+  };
   a.run("coApply('propose_plan_changes',__i)");
   const mon = JSON.parse(a.run('JSON.stringify(PLAN[0].e.map(e=>e.join(" ")))'));
   assert.equal(mon[0], 'DB bench press 4×8–10');
@@ -44,18 +111,29 @@ test('applying a plan proposal changes the plan', () => {
 test('progression and goal proposals', () => {
   const a = app();
   assert.equal(check(a, 'propose_progression', { exercise: 'Squat', method: 'linear' }), '');
-  assert.match(check(a, 'propose_progression', { exercise: 'Underwater basket weaving', method: 'linear' }), /not in the plan/);
-  a.run("coApply('propose_progression',{exercise:'Squat',increment:'big'});coApply('propose_progression',{exercise:'all',effort:'2-3'})");
+  assert.match(
+    check(a, 'propose_progression', { exercise: 'Underwater basket weaving', method: 'linear' }),
+    /not in the plan/
+  );
+  a.run(
+    "coApply('propose_progression',{exercise:'Squat',increment:'big'});coApply('propose_progression',{exercise:'all',effort:'2-3'})"
+  );
   assert.equal(a.run("stepOf('Squat')"), 10);
   assert.equal(a.run("progOf('Barbell row').e"), '2-3');
-  assert.match(check(a, 'propose_goal', { type: 'lift', lift: 'Squat', target_kg: 140, date: '2026-01-01' }), /future/);
+  assert.match(
+    check(a, 'propose_goal', { type: 'lift', lift: 'Squat', target_kg: 140, date: '2026-01-01' }),
+    /future/
+  );
   a.run("coApply('propose_goal',{type:'lift',lift:'Squat',target_kg:140,date:'2027-03-01'})");
   assert.equal(a.run('S.goals[0].target'), 140);
 });
 
 test('the snapshot gives Claude the plan, recent sets and targets', () => {
   const a = app();
-  a.ctx.__s = [{ d: '2026-11-16', w: 80, r: 5, q: 2 }, { d: '2026-09-01', w: 40, r: 5 }];
+  a.ctx.__s = [
+    { d: '2026-11-16', w: 80, r: 5, q: 2 },
+    { d: '2026-09-01', w: 40, r: 5 }
+  ];
   a.run("S.log={'Bench press (heavy)':__s};S.weights=[{d:'2026-11-14',w:73.9}]");
   const s = a.run('coSnapshot()');
   assert.match(s, /Wednesday,? 18 November 2026/);
@@ -76,16 +154,60 @@ test('replies are shown as text, never as HTML', () => {
 
 test('a question that leads to a proposal: card shown, tool result sent back, nothing applied yet', async () => {
   const a = app();
-  a.store['fit-claude'] = JSON.stringify({ key: 'sk-ant-test-0000000000000000000000', model: 'claude-opus-5-5' });
+  a.store['fit-claude'] = JSON.stringify({
+    key: 'sk-ant-test-0000000000000000000000',
+    model: 'claude-opus-5-5'
+  });
   const calls = [];
   const replies = [
-    { stop_reason: 'tool_use', usage: { input_tokens: 5000, output_tokens: 200 }, content: [{ type: 'text', text: 'Try dumbbells instead.' }, { type: 'tool_use', id: 'tu1', name: 'propose_plan_changes', input: { summary: 'Swap bench for DB bench', changes: [{ action: 'swap_exercise', day: 'Mon', exercise: 'Bench press (heavy)', new_exercise: 'DB bench press' }] } }] },
-    { stop_reason: 'end_turn', usage: { input_tokens: 5300, output_tokens: 40 }, content: [{ type: 'text', text: 'Tap Apply if you want it.' }] },
+    {
+      stop_reason: 'tool_use',
+      usage: { input_tokens: 5000, output_tokens: 200 },
+      content: [
+        { type: 'text', text: 'Try dumbbells instead.' },
+        {
+          type: 'tool_use',
+          id: 'tu1',
+          name: 'propose_plan_changes',
+          input: {
+            summary: 'Swap bench for DB bench',
+            changes: [
+              {
+                action: 'swap_exercise',
+                day: 'Mon',
+                exercise: 'Bench press (heavy)',
+                new_exercise: 'DB bench press'
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      stop_reason: 'end_turn',
+      usage: { input_tokens: 5300, output_tokens: 40 },
+      content: [{ type: 'text', text: 'Tap Apply if you want it.' }]
+    }
   ];
   a.ctx.__fake = {
     APIError: class extends Error {},
-    Anthropic: class { constructor(o) { this.o = o; const stream = req => { calls.push(req); const r = replies.shift(); return { on: (ev, f) => { if (ev === 'text') r.content.filter(b => b.type === 'text').forEach(b => f(b.text)); }, finalMessage: async () => r }; };
-      this.beta = { messages: { stream } }; this.messages = { stream }; } },
+    Anthropic: class {
+      constructor(o) {
+        this.o = o;
+        const stream = req => {
+          calls.push(req);
+          const r = replies.shift();
+          return {
+            on: (ev, f) => {
+              if (ev === 'text') r.content.filter(b => b.type === 'text').forEach(b => f(b.text));
+            },
+            finalMessage: async () => r
+          };
+        };
+        this.beta = { messages: { stream } };
+        this.messages = { stream };
+      }
+    }
   };
   a.run('CO.sdk=__fake;COM=null');
   await a.run("coSend('My shoulder hurts on bench')");
@@ -96,28 +218,59 @@ test('a question that leads to a proposal: card shown, tool result sent back, no
   assert.equal(calls[0].output_config.effort, 'medium');
   assert.ok(calls[0].tools.every(t => t.eager_input_streaming === true));
   assert.equal(calls[0].system.length, 1, 'system prompt is fixed text only');
-  assert.match(calls[0].messages[0].content[0].text, /APP DATA SNAPSHOT/, 'data travels in the first message');
+  assert.match(
+    calls[0].messages[0].content[0].text,
+    /APP DATA SNAPSHOT/,
+    'data travels in the first message'
+  );
   assert.equal(calls[0].messages[0].content[1].text, 'My shoulder hurts on bench');
   const second = calls[1].messages;
   assert.equal(second[second.length - 1].content[0].type, 'tool_result');
   assert.equal(second[second.length - 1].content[0].tool_use_id, 'tu1');
-  assert.equal(a.run("COM.p.tu1"), 'open');
+  assert.equal(a.run('COM.p.tu1'), 'open');
   assert.equal(a.run('PLAN[0].e[0][0]'), 'Bench press (heavy)', 'nothing changes until Apply');
   assert.ok(a.run('COM.cost') > 0);
   a.run("coPropose('tu1',true)");
   assert.equal(a.run('PLAN[0].e[0][0]'), 'DB bench press');
-  assert.equal(a.run("COM.p.tu1"), 'applied');
+  assert.equal(a.run('COM.p.tu1'), 'applied');
 });
 
 test('an invalid proposal is not shown and Claude is told why', async () => {
   const a = app();
-  a.store['fit-claude'] = JSON.stringify({ key: 'sk-ant-test-0000000000000000000000', model: 'claude-haiku-5-5' });
+  a.store['fit-claude'] = JSON.stringify({
+    key: 'sk-ant-test-0000000000000000000000',
+    model: 'claude-haiku-5-5'
+  });
   const calls = [];
   const replies = [
-    { stop_reason: 'tool_use', usage: {}, content: [{ type: 'tool_use', id: 'tu9', name: 'propose_plan_changes', input: { summary: 'x', changes: [{ action: 'remove_exercise', day: 'Mon', exercise: 'Nope' }] } }] },
-    { stop_reason: 'end_turn', usage: {}, content: [{ type: 'text', text: 'Sorry, which exercise?' }] },
+    {
+      stop_reason: 'tool_use',
+      usage: {},
+      content: [
+        {
+          type: 'tool_use',
+          id: 'tu9',
+          name: 'propose_plan_changes',
+          input: { summary: 'x', changes: [{ action: 'remove_exercise', day: 'Mon', exercise: 'Nope' }] }
+        }
+      ]
+    },
+    { stop_reason: 'end_turn', usage: {}, content: [{ type: 'text', text: 'Sorry, which exercise?' }] }
   ];
-  a.ctx.__fake = { APIError: class extends Error {}, Anthropic: class { constructor() { const stream = req => { calls.push(req); const r = replies.shift(); return { on: () => {}, finalMessage: async () => r }; }; this.beta = { messages: { stream } }; this.messages = { stream }; } } };
+  a.ctx.__fake = {
+    APIError: class extends Error {},
+    Anthropic: class {
+      constructor() {
+        const stream = req => {
+          calls.push(req);
+          const r = replies.shift();
+          return { on: () => {}, finalMessage: async () => r };
+        };
+        this.beta = { messages: { stream } };
+        this.messages = { stream };
+      }
+    }
+  };
   a.run('CO.sdk=__fake;COM=null');
   await a.run("coSend('remove something')");
   assert.equal(calls[0].fallbacks, undefined, 'Haiku has no server-side fallback');
@@ -129,34 +282,73 @@ test('an invalid proposal is not shown and Claude is told why', async () => {
 
 /* A fake SDK that records every request and replays scripted replies (or errors). */
 function fakeSdk(a, replies, calls) {
-  a.ctx.__replies = replies; a.ctx.__calls = calls;
+  a.ctx.__replies = replies;
+  a.ctx.__calls = calls;
   a.run(`(()=>{class APIError extends Error{};class BadRequestError extends APIError{};
     const stream=req=>{__calls.push(JSON.parse(JSON.stringify(req)));const r=__replies.shift();
       return {on:()=>{},finalMessage:async()=>{if(r.error)throw new BadRequestError(r.error);return r}}};
     CO.sdk={APIError,BadRequestError,Anthropic:class{constructor(){this.beta={messages:{stream}};this.messages={stream}}}};COM=null})()`);
 }
-const think = (sig) => ({ type: 'thinking', thinking: '', signature: sig });
+const think = sig => ({ type: 'thinking', thinking: '', signature: sig });
 
 test('the conversation is append-only: same system prompt and same earlier messages on every request, even after applying a change', async () => {
   const a = app();
-  a.store['fit-claude'] = JSON.stringify({ key: 'sk-ant-test-0000000000000000000000', model: 'claude-opus-5-5' });
+  a.store['fit-claude'] = JSON.stringify({
+    key: 'sk-ant-test-0000000000000000000000',
+    model: 'claude-opus-5-5'
+  });
   const calls = [];
-  fakeSdk(a, [
-    { stop_reason: 'tool_use', usage: {}, content: [think('s1'), { type: 'text', text: 'Swap it.' }, { type: 'tool_use', id: 'tu1', name: 'propose_plan_changes', input: { summary: 'Swap', changes: [{ action: 'swap_exercise', day: 'Mon', exercise: 'Bench press (heavy)', new_exercise: 'DB bench press' }] } }] },
-    { stop_reason: 'end_turn', usage: {}, content: [think('s2'), { type: 'text', text: 'Tap Apply.' }] },
-    { stop_reason: 'end_turn', usage: {}, content: [think('s3'), { type: 'text', text: 'Good week.' }] },
-    { stop_reason: 'end_turn', usage: {}, content: [{ type: 'text', text: 'Yes.' }] },
-  ], calls);
+  fakeSdk(
+    a,
+    [
+      {
+        stop_reason: 'tool_use',
+        usage: {},
+        content: [
+          think('s1'),
+          { type: 'text', text: 'Swap it.' },
+          {
+            type: 'tool_use',
+            id: 'tu1',
+            name: 'propose_plan_changes',
+            input: {
+              summary: 'Swap',
+              changes: [
+                {
+                  action: 'swap_exercise',
+                  day: 'Mon',
+                  exercise: 'Bench press (heavy)',
+                  new_exercise: 'DB bench press'
+                }
+              ]
+            }
+          }
+        ]
+      },
+      { stop_reason: 'end_turn', usage: {}, content: [think('s2'), { type: 'text', text: 'Tap Apply.' }] },
+      { stop_reason: 'end_turn', usage: {}, content: [think('s3'), { type: 'text', text: 'Good week.' }] },
+      { stop_reason: 'end_turn', usage: {}, content: [{ type: 'text', text: 'Yes.' }] }
+    ],
+    calls
+  );
   await a.run("coSend('Shoulder hurts')");
   a.run("coPropose('tu1',true)"); // the plan changes between questions
   await a.run("coSend('How has this week gone?')");
   await a.run("coSend('Anything else?')");
   assert.equal(calls.length, 4);
   const sys = calls.map(c => JSON.stringify(c.system) + JSON.stringify(c.tools));
-  assert.ok(sys.every(x => x === sys[0]), 'system prompt and tools never change');
+  assert.ok(
+    sys.every(x => x === sys[0]),
+    'system prompt and tools never change'
+  );
   for (let i = 1; i < calls.length; i++) {
-    const prev = calls[i - 1].messages, cur = calls[i].messages;
-    assert.equal(JSON.stringify(cur.slice(0, prev.length)), JSON.stringify(prev), `request ${i + 1} starts with request ${i} unchanged`);
+    const prev = calls[i - 1].messages,
+      cur = calls[i].messages;
+    assert.equal(
+      JSON.stringify(cur.slice(0, prev.length)),
+      JSON.stringify(prev),
+      `request ${i + 1} starts with request ${i} unchanged`
+    );
   }
   // thinking blocks are passed back untouched
   assert.equal(JSON.stringify(calls[2].messages[1].content[0]), JSON.stringify(think('s1')));
@@ -170,41 +362,76 @@ test('the conversation is append-only: same system prompt and same earlier messa
 
 test('a thinking-signature error is fixed by dropping the old thinking blocks and retrying once', async () => {
   const a = app();
-  a.store['fit-claude'] = JSON.stringify({ key: 'sk-ant-test-0000000000000000000000', model: 'claude-opus-5-5' });
+  a.store['fit-claude'] = JSON.stringify({
+    key: 'sk-ant-test-0000000000000000000000',
+    model: 'claude-opus-5-5'
+  });
   // a chat saved by the earlier version: snapshot in the system prompt, thinking blocks bound to it
-  a.store['fit-chat'] = JSON.stringify({ m: [{ role: 'user', content: 'Add arm work' }, { role: 'assistant', content: [think('old'), { type: 'text', text: 'Done as a card.' }] }], p: {}, cost: 0 });
+  a.store['fit-chat'] = JSON.stringify({
+    m: [
+      { role: 'user', content: 'Add arm work' },
+      { role: 'assistant', content: [think('old'), { type: 'text', text: 'Done as a card.' }] }
+    ],
+    p: {},
+    cost: 0
+  });
   const calls = [];
-  fakeSdk(a, [
-    { stop_reason: 'end_turn', usage: {}, content: [{ type: 'text', text: 'Fine.' }] },
-  ], calls);
+  fakeSdk(a, [{ stop_reason: 'end_turn', usage: {}, content: [{ type: 'text', text: 'Fine.' }] }], calls);
   await a.run("coSend('How has this week gone?')");
   assert.equal(calls.length, 1);
   assert.ok(!JSON.stringify(calls[0].messages).includes('"thinking"'), 'old chats are cleaned when loaded');
   assert.equal(a.run('CO.err'), '');
 
   // and if the API still objects, the app strips and retries by itself
-  a.store['fit-chat'] = JSON.stringify({ v: 2, m: [{ role: 'user', content: 'Hi' }, { role: 'assistant', content: [think('bad'), { type: 'text', text: 'Hello.' }] }], p: {}, cost: 0 });
+  a.store['fit-chat'] = JSON.stringify({
+    v: 2,
+    m: [
+      { role: 'user', content: 'Hi' },
+      { role: 'assistant', content: [think('bad'), { type: 'text', text: 'Hello.' }] }
+    ],
+    p: {},
+    cost: 0
+  });
   const calls2 = [];
-  fakeSdk(a, [
-    { error: 'messages.1.content.0: Invalid `signature` in `thinking` block.' },
-    { stop_reason: 'end_turn', usage: {}, content: [{ type: 'text', text: 'Recovered.' }] },
-  ], calls2);
+  fakeSdk(
+    a,
+    [
+      { error: 'messages.1.content.0: Invalid `signature` in `thinking` block.' },
+      { stop_reason: 'end_turn', usage: {}, content: [{ type: 'text', text: 'Recovered.' }] }
+    ],
+    calls2
+  );
   await a.run("coSend('Next question')");
   assert.equal(calls2.length, 2);
   assert.match(JSON.stringify(calls2[0].messages), /"signature":"bad"/);
   assert.doesNotMatch(JSON.stringify(calls2[1].messages), /"thinking"/);
   assert.equal(a.run('CO.err'), '');
-  assert.match(a.run("JSON.stringify(COM.m[COM.m.length-1].content)"), /Recovered/);
+  assert.match(a.run('JSON.stringify(COM.m[COM.m.length-1].content)'), /Recovered/);
 });
 
 test('a reply cut off mid-proposal is kept without its tool call or thinking, so the chat stays valid', async () => {
   const a = app();
-  a.store['fit-claude'] = JSON.stringify({ key: 'sk-ant-test-0000000000000000000000', model: 'claude-opus-5-5' });
+  a.store['fit-claude'] = JSON.stringify({
+    key: 'sk-ant-test-0000000000000000000000',
+    model: 'claude-opus-5-5'
+  });
   const calls = [];
-  fakeSdk(a, [
-    { stop_reason: 'max_tokens', usage: {}, content: [think('t'), { type: 'text', text: 'Here is a big plan' }, { type: 'tool_use', id: 'tuX', name: 'propose_plan_changes', input: { summary: 'x' } }] },
-    { stop_reason: 'end_turn', usage: {}, content: [{ type: 'text', text: 'ok' }] },
-  ], calls);
+  fakeSdk(
+    a,
+    [
+      {
+        stop_reason: 'max_tokens',
+        usage: {},
+        content: [
+          think('t'),
+          { type: 'text', text: 'Here is a big plan' },
+          { type: 'tool_use', id: 'tuX', name: 'propose_plan_changes', input: { summary: 'x' } }
+        ]
+      },
+      { stop_reason: 'end_turn', usage: {}, content: [{ type: 'text', text: 'ok' }] }
+    ],
+    calls
+  );
   await a.run("coSend('Rewrite my whole plan')");
   await a.run("coSend('Shorter please')");
   const asst = calls[1].messages[1];

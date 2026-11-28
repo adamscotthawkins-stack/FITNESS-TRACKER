@@ -10,7 +10,11 @@ function withLog(app, log, extra = '') {
 
 test('the old bench goal becomes an editable goal, and tested 1RMs carry over', () => {
   const app = loadApp();
-  withLog(app, { 'Bench press (heavy)': [{ d: '2026-10-20', w: 70, r: 5 }] }, "S.benches=[{d:'2026-11-01',w:90}]");
+  withLog(
+    app,
+    { 'Bench press (heavy)': [{ d: '2026-10-20', w: 70, r: 5 }] },
+    "S.benches=[{d:'2026-11-01',w:90}]"
+  );
   assert.equal(app.run('migrateGoals()'), true);
   const g = JSON.parse(app.run('JSON.stringify(S.goals)'));
   assert.equal(g.length, 1);
@@ -29,9 +33,12 @@ test('no bench history means no goal is created', () => {
 test('a lift goal counts every variation of the lift and the best of the last 4 weeks', () => {
   const app = loadApp();
   withLog(app, {
-    'Bench press (heavy)': [{ d: '2026-10-01', w: 100, r: 3 }, { d: '2026-11-10', w: 80, r: 5 }],
+    'Bench press (heavy)': [
+      { d: '2026-10-01', w: 100, r: 3 },
+      { d: '2026-11-10', w: 80, r: 5 }
+    ],
     'Bench press (volume)': [{ d: '2026-11-14', w: 75, r: 8 }],
-    'Incline DB press': [{ d: '2026-11-14', w: 40, r: 8 }],
+    'Incline DB press': [{ d: '2026-11-14', w: 40, r: 8 }]
   });
   app.run("S.goals=[{id:'a',t:'lift',lift:'Bench press',target:100,date:'2026-12-25',s:80}]");
   const G = JSON.parse(app.run('JSON.stringify(goalState(S.goals[0]))'));
@@ -39,12 +46,12 @@ test('a lift goal counts every variation of the lift and the best of the last 4 
   assert.equal(G.cur, 94);
   assert.equal(G.reached, false);
   assert.equal(G.left, 37);
-  assert.equal(G.pct, 70, "(94 - 80) / (100 - 80)");
+  assert.equal(G.pct, 70, '(94 - 80) / (100 - 80)');
 });
 
 test('reaching a lift goal', () => {
   const app = loadApp();
-  withLog(app, { 'Squat': [{ d: '2026-11-17', w: 120, r: 3 }] });
+  withLog(app, { Squat: [{ d: '2026-11-17', w: 120, r: 3 }] });
   app.run("S.goals=[{id:'a',t:'lift',lift:'Squat',target:120,date:'2026-12-25',s:100}]");
   assert.equal(app.run('goalState(S.goals[0]).reached'), true);
 });
@@ -52,7 +59,9 @@ test('reaching a lift goal', () => {
 test('body weight goals work in both directions', () => {
   const app = loadApp();
   withLog(app, {}, "S.weights=[{d:'2026-10-01',w:80},{d:'2026-11-15',w:78}]");
-  app.run("S.goals=[{id:'a',t:'bw',target:75,date:'2027-01-31',s:80},{id:'b',t:'bw',target:78,date:'2027-01-31',s:80}]");
+  app.run(
+    "S.goals=[{id:'a',t:'bw',target:75,date:'2027-01-31',s:80},{id:'b',t:'bw',target:78,date:'2027-01-31',s:80}]"
+  );
   const a = JSON.parse(app.run('JSON.stringify(goalState(S.goals[0]))'));
   assert.equal(a.cur, 78);
   assert.equal(a.up, false);

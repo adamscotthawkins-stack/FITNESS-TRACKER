@@ -1,37 +1,249 @@
 /* Foods, weight pace, badges, measurements, tools, session summary, 1RM maths, icons */
-function addF(){const n=document.getElementById('fn').value.trim(),k=parseFloat(document.getElementById('fk').value),p=parseFloat(document.getElementById('fp').value)||0;if(!n||!(k>=0))return;(S.foods[today]=S.foods[today]||[]).push({n:n,k:Math.round(k),p:p});save();draw()}
-function delF(i){S.foods[today].splice(i,1);save();draw()}
-function dd(a,b){return (new Date(b)-new Date(a))/864e5}
-function checkCard(){const w=S.weights;let b,a=0;if(w.length<2)b='Log your weight once a week (same day, mornings) and I’ll check you’re gaining at the right pace.';else{const l=w[w.length-1],f=[...w].reverse().find(x=>dd(x.d,l.d)>=7)||w[0],r=dd(f.d,l.d)?(l.w-f.w)/dd(f.d,l.d)*7:0;a=r<.15?150:r>.6?-150:0;b=`${r>=0?'+':''}${r.toFixed(2)} kg/week over ${Math.round(dd(f.d,l.d))} days. `+(r<.15?'Too slow: add ~150 kcal a day.':r>.6?'A bit fast, mostly fat: cut ~150 kcal a day.':'Right on pace. Keep going.')+(a&&w.length<3?' That’s from only 2 weigh-ins, so log another before changing anything.':'')}const rec=S.kadjAt&&dd(S.kadjAt,today)<14,adj=S.kadj||0;return `<div class="card"><div class="ch"><span class="ci" style="--c:var(--green)">${ICO.scale}</span><h2>Weight pace</h2></div><div class="mu">${b}</div>${adj?`<div class="mu sm" style="margin-top:6px">Calorie target ${adj>0?'+':''}${adj} kcal from your weight checks${rec?' (changed '+fmtD(S.kadjAt)+', give it 2 weeks)':''}.</div>`:''}${a&&!rec&&w.length>=3?`<button class="btn sm" style="margin-top:10px" onclick="adjK(${a})">${a>0?'Add':'Cut'} 150 kcal from my daily target</button>`:''}</div>`}
-function sess(){const m={};for(const k in S.done){if(!S.done[k])continue;const x=k.match(/^x(\d{4}-\d\d-\d\d)-(\d)-/);if(x&&PLAN[+x[2]].n!=='Rest day')(m[x[1]]=m[x[1]]||new Set()).add(x[2])}return m}
-function badgeCard(){const m=sess(),ws=Object.keys(m),tot=ws.reduce((a,k)=>a+m[k].size,0),perf=ws.filter(k=>m[k].size>=NT()).length;let st=0,d=new Date(wk+'T00:00');if(!(m[wk]&&m[wk].size>=NT()))d.setDate(d.getDate()-7);while(m[iso(d)]&&m[iso(d)].size>=NT()){st++;d.setDate(d.getDate()-7)}const sets=Object.values(S.log).reduce((a,l)=>a+l.length,0);const B=[['flame','First session',tot>=1],['dumbbell','10 sessions',tot>=10],['trophy','Perfect week ('+NT()+'/'+NT()+')',perf>=1],['cal','4 perfect weeks in a row',st>=4],['list','100 sets logged',sets>=100],['target','Reach a goal',(S.goals||[]).some(g=>g.hit||goalState(g).reached)||!!S.goalHit]];return `<div class="card"><div class="ch"><span class="ci" style="--c:var(--amber)">${ICO.medal}</span><h2>Badges · ${B.filter(b=>b[2]).length}/${B.length}</h2></div><div class="mu">${tot} sessions · ${st} perfect weeks in a row</div>${B.map(b=>`<div class="row" style="opacity:${b[2]?1:.6}"><span class="medal ${b[2]?'on':''}">${ICO[b[0]]}</span><span class="t">${b[1]}</span><span class="r">${b[2]?'Earned':'Locked'}</span></div>`).join('')}</div>`}
-function addM(){const g=i=>parseFloat(document.getElementById(i).value)||null,m={d:today,c:g('mc'),a:g('ma'),w:g('mw')};if(!m.c&&!m.a&&!m.w)return;S.meas=S.meas.filter(x=>x.d!==today);S.meas.push(m);save();draw()}
-function measCard(){const M=S.meas,l=M[M.length-1],f=M[0],df=k=>l&&f&&M.length>1&&l[k]&&f[k]?((l[k]-f[k]>=0?'+':'')+(l[k]-f[k]).toFixed(1)):'';const cell=(k,lab)=>`<div class="tile"><span class="eyebrow">${lab}</span><b>${l&&l[k]?l[k]:'–'}<small> cm</small></b>${df(k)?`<span class="sub">${df(k)} since ${fmtD(f.d)}</span>`:''}</div>`;return `<div class="card"><div class="ch"><span class="ci" style="--c:var(--violet)">${ICO.ruler}</span><h2>Measurements</h2></div>${l?`<div class="tiles">${cell('c','Chest')}${cell('a','Arms')}${cell('w','Waist')}</div>`:'<div class="mu sm">Measure once a month, first thing in the morning.</div>'}<div class="row-in"><input id="mc" type="number" step="0.5" inputmode="decimal" placeholder="Chest"><input id="ma" type="number" step="0.5" inputmode="decimal" placeholder="Arms"><input id="mw" type="number" step="0.5" inputmode="decimal" placeholder="Waist"></div><button class="btn sm" style="margin-top:8px" onclick="addM()">Save today’s measurements</button></div>`}
-const HAB=['Creatine 5g','Protein shake','10,000 steps','8 hours sleep','3L water'];
-let TT;function toast(m){const el=document.getElementById('ts');el.innerHTML=m;el.className='on';clearTimeout(TT);TT=setTimeout(()=>el.className='',4500)}
-function wu(){const w=parseFloat(document.getElementById('ww').value);if(!(w>0))return;const r=x=>Math.round(x/2.5)*2.5;const s=[[20,10],[r(w*.4),8],[r(w*.6),5],[r(w*.75),3],[r(w*.9),1]].filter((x,i)=>x[0]<w&&(i===0||x[0]>20));document.getElementById('wuo').innerHTML=s.map(x=>`<div class="row"><span class="t">${x[0]} kg</span><span class="r">× ${x[1]} reps</span></div>`).join('')+`<div class="row"><span class="t"><b>${w} kg</b> working sets</span></div>`}
-function pl(){const w=parseFloat(document.getElementById('pw').value);if(!(w>=20))return;let s=(w-20)/2;const o=[],g=[];[25,20,15,10,5,2.5,1.25].forEach(p=>{const n=Math.floor(s/p+1e-9);if(n){g.push(n+' × '+p+' kg');for(let j=0;j<n;j++)o.push(p);s-=n*p}});document.getElementById('plo').innerHTML=o.length?`<div class="loadout" aria-hidden="true"><span class="shaft"></span><span class="collar"></span>${o.map(p=>`<span class="plate p${String(p).replace('.','_')}">${p}</span>`).join('')}<span class="sleeve"></span></div><div>Each side of a 20 kg bar: ${g.join(' + ')}${s>.01?'<br>'+(s*2).toFixed(2)+' kg can’t be loaded':''}</div>`:'Just the bar'}
-function hbt(i){const h=S.habits[today]=S.habits[today]||{};h[i]=!h[i];save();draw()}
-function fin(){S.done['f'+wk+'-'+ti]=true;save();draw();sumSheet();cloudAuto()}
-function sumSheet(){const st=allSets().filter(x=>x.d===today).map(x=>Object.assign({},x,S.log[x.n][x.j],{n:x.n})),prs=prList().filter(x=>x.d===today),vol=ton(st),pv=ton(allSets().filter(x=>x.d===addDays(today,-7))),ts=st.map(x=>x.t).filter(Boolean),mins=ts.length>1?Math.round((Math.max(...ts)-Math.min(...ts))/6e4):null,qs=st.map(x=>x.q).filter(v=>v!=null),aq=qs.length?qs.reduce((a,b)=>a+b,0)/qs.length:null,lifts=[...new Set(st.map(x=>x.n))],dv=pv?Math.round((vol-pv)/pv*100):null;
-SH={sum:1};const el=document.getElementById('sheet');el.innerHTML=`<div class="sheet-bg" onclick="shx()"></div><div class="sheet-card tall" role="dialog" aria-modal="true" aria-labelledby="shT"><div class="sum-top"><span class="ok">${ICO.check}</span><div><div class="eyebrow">Workout complete · ${fmtD(today)}</div><h2 id="shT">${esc(PLAN[ti].n)} done${inDl()?' (deload)':''}</h2></div></div>
-<div class="tiles">${tile('Sets',st.length,'logged')}${tile('Volume',fmtT(vol),dv==null?'kg × reps':`<span class="pill ${dv>=0?'up':'down'}">${dv>=0?'+':''}${dv}%</span> vs last week`)}${tile('Time',mins!=null?mins+'<small> min</small>':'–','first to last set')}</div>
+function addFood() {
+  const n = document.getElementById('fn').value.trim(),
+    k = parseFloat(document.getElementById('fk').value),
+    p = parseFloat(document.getElementById('fp').value) || 0;
+  if (!n || !(k >= 0)) return;
+  (S.foods[today] = S.foods[today] || []).push({ n: n, k: Math.round(k), p: p });
+  save();
+  draw();
+}
+function deleteFood(i) {
+  S.foods[today].splice(i, 1);
+  save();
+  draw();
+}
+function daysBetween(a, b) {
+  return (new Date(b) - new Date(a)) / 864e5;
+}
+function checkCard() {
+  const w = S.weights;
+  let b,
+    a = 0;
+  if (w.length < 2)
+    b = 'Log your weight once a week (same day, mornings) and I’ll check you’re gaining at the right pace.';
+  else {
+    const l = w[w.length - 1],
+      f = [...w].reverse().find(x => daysBetween(x.d, l.d) >= 7) || w[0],
+      r = daysBetween(f.d, l.d) ? ((l.w - f.w) / daysBetween(f.d, l.d)) * 7 : 0;
+    a = r < 0.15 ? 150 : r > 0.6 ? -150 : 0;
+    b =
+      `${r >= 0 ? '+' : ''}${r.toFixed(2)} kg/week over ${Math.round(daysBetween(f.d, l.d))} days. ` +
+      (r < 0.15
+        ? 'Too slow: add ~150 kcal a day.'
+        : r > 0.6
+          ? 'A bit fast, mostly fat: cut ~150 kcal a day.'
+          : 'Right on pace. Keep going.') +
+      (a && w.length < 3 ? ' That’s from only 2 weigh-ins, so log another before changing anything.' : '');
+  }
+  const rec = S.kadjAt && daysBetween(S.kadjAt, today) < 14,
+    adj = S.kadj || 0;
+  return `<div class="card"><div class="ch"><span class="ci" style="--c:var(--green)">${ICO.scale}</span><h2>Weight pace</h2></div><div class="mu">${b}</div>${adj ? `<div class="mu sm" style="margin-top:6px">Calorie target ${adj > 0 ? '+' : ''}${adj} kcal from your weight checks${rec ? ' (changed ' + fmtD(S.kadjAt) + ', give it 2 weeks)' : ''}.</div>` : ''}${a && !rec && w.length >= 3 ? `<button class="btn sm" style="margin-top:10px" onclick="adjustKcal(${a})">${a > 0 ? 'Add' : 'Cut'} 150 kcal from my daily target</button>` : ''}</div>`;
+}
+function sessionDays() {
+  const m = {};
+  for (const k in S.done) {
+    if (!S.done[k]) continue;
+    const x = k.match(/^x(\d{4}-\d\d-\d\d)-(\d)-/);
+    if (x && PLAN[+x[2]].n !== 'Rest day') (m[x[1]] = m[x[1]] || new Set()).add(x[2]);
+  }
+  return m;
+}
+function badgeCard() {
+  const m = sessionDays(),
+    ws = Object.keys(m),
+    tot = ws.reduce((a, k) => a + m[k].size, 0),
+    perf = ws.filter(k => m[k].size >= trainingDays()).length;
+  let st = 0,
+    d = new Date(weekKey + 'T00:00');
+  if (!(m[weekKey] && m[weekKey].size >= trainingDays())) d.setDate(d.getDate() - 7);
+  while (m[iso(d)] && m[iso(d)].size >= trainingDays()) {
+    st++;
+    d.setDate(d.getDate() - 7);
+  }
+  const sets = Object.values(S.log).reduce((a, l) => a + l.length, 0);
+  const B = [
+    ['flame', 'First session', tot >= 1],
+    ['dumbbell', '10 sessions', tot >= 10],
+    ['trophy', 'Perfect week (' + trainingDays() + '/' + trainingDays() + ')', perf >= 1],
+    ['cal', '4 perfect weeks in a row', st >= 4],
+    ['list', '100 sets logged', sets >= 100],
+    ['target', 'Reach a goal', (S.goals || []).some(g => g.hit || goalState(g).reached) || !!S.goalHit]
+  ];
+  return `<div class="card"><div class="ch"><span class="ci" style="--c:var(--amber)">${ICO.medal}</span><h2>Badges · ${B.filter(b => b[2]).length}/${B.length}</h2></div><div class="mu">${tot} sessions · ${st} perfect weeks in a row</div>${B.map(b => `<div class="row" style="opacity:${b[2] ? 1 : 0.6}"><span class="medal ${b[2] ? 'on' : ''}">${ICO[b[0]]}</span><span class="t">${b[1]}</span><span class="r">${b[2] ? 'Earned' : 'Locked'}</span></div>`).join('')}</div>`;
+}
+function addMeasurement() {
+  const g = i => parseFloat(document.getElementById(i).value) || null,
+    m = { d: today, c: g('mc'), a: g('ma'), w: g('mw') };
+  if (!m.c && !m.a && !m.w) return;
+  S.meas = S.meas.filter(x => x.d !== today);
+  S.meas.push(m);
+  save();
+  draw();
+}
+function measCard() {
+  const M = S.meas,
+    l = M[M.length - 1],
+    f = M[0],
+    df = k =>
+      l && f && M.length > 1 && l[k] && f[k] ? (l[k] - f[k] >= 0 ? '+' : '') + (l[k] - f[k]).toFixed(1) : '';
+  const cell = (k, lab) =>
+    `<div class="tile"><span class="eyebrow">${lab}</span><b>${l && l[k] ? l[k] : '–'}<small> cm</small></b>${df(k) ? `<span class="sub">${df(k)} since ${fmtD(f.d)}</span>` : ''}</div>`;
+  return `<div class="card"><div class="ch"><span class="ci" style="--c:var(--violet)">${ICO.ruler}</span><h2>Measurements</h2></div>${l ? `<div class="tiles">${cell('c', 'Chest')}${cell('a', 'Arms')}${cell('w', 'Waist')}</div>` : '<div class="mu sm">Measure once a month, first thing in the morning.</div>'}<div class="row-in"><input id="mc" type="number" step="0.5" inputmode="decimal" placeholder="Chest"><input id="ma" type="number" step="0.5" inputmode="decimal" placeholder="Arms"><input id="mw" type="number" step="0.5" inputmode="decimal" placeholder="Waist"></div><button class="btn sm" style="margin-top:8px" onclick="addMeasurement()">Save today’s measurements</button></div>`;
+}
+const HABITS = ['Creatine 5g', 'Protein shake', '10,000 steps', '8 hours sleep', '3L water'];
+let TOAST_TIMER;
+function toast(m) {
+  const el = document.getElementById('ts');
+  el.innerHTML = m;
+  el.className = 'on';
+  clearTimeout(TOAST_TIMER);
+  TOAST_TIMER = setTimeout(() => (el.className = ''), 4500);
+}
+function calcWarmup() {
+  const w = parseFloat(document.getElementById('ww').value);
+  if (!(w > 0)) return;
+  const r = x => Math.round(x / 2.5) * 2.5;
+  const s = [
+    [20, 10],
+    [r(w * 0.4), 8],
+    [r(w * 0.6), 5],
+    [r(w * 0.75), 3],
+    [r(w * 0.9), 1]
+  ].filter((x, i) => x[0] < w && (i === 0 || x[0] > 20));
+  document.getElementById('wuo').innerHTML =
+    s
+      .map(
+        x => `<div class="row"><span class="t">${x[0]} kg</span><span class="r">× ${x[1]} reps</span></div>`
+      )
+      .join('') + `<div class="row"><span class="t"><b>${w} kg</b> working sets</span></div>`;
+}
+function pl() {
+  const w = parseFloat(document.getElementById('pw').value);
+  if (!(w >= 20)) return;
+  let s = (w - 20) / 2;
+  const o = [],
+    g = [];
+  [25, 20, 15, 10, 5, 2.5, 1.25].forEach(p => {
+    const n = Math.floor(s / p + 1e-9);
+    if (n) {
+      g.push(n + ' × ' + p + ' kg');
+      for (let j = 0; j < n; j++) o.push(p);
+      s -= n * p;
+    }
+  });
+  document.getElementById('plo').innerHTML = o.length
+    ? `<div class="loadout" aria-hidden="true"><span class="shaft"></span><span class="collar"></span>${o.map(p => `<span class="plate p${String(p).replace('.', '_')}">${p}</span>`).join('')}<span class="sleeve"></span></div><div>Each side of a 20 kg bar: ${g.join(' + ')}${s > 0.01 ? '<br>' + (s * 2).toFixed(2) + ' kg can’t be loaded' : ''}</div>`
+    : 'Just the bar';
+}
+function toggleHabit(i) {
+  const h = (S.habits[today] = S.habits[today] || {});
+  h[i] = !h[i];
+  save();
+  draw();
+}
+function finishWorkout() {
+  S.done['f' + weekKey + '-' + todayIdx] = true;
+  save();
+  draw();
+  sumSheet();
+  cloudAuto();
+}
+function sumSheet() {
+  const st = allSets()
+      .filter(x => x.d === today)
+      .map(x => Object.assign({}, x, S.log[x.n][x.j], { n: x.n })),
+    prs = prList().filter(x => x.d === today),
+    vol = tonnage(st),
+    pv = tonnage(allSets().filter(x => x.d === addDays(today, -7))),
+    ts = st.map(x => x.t).filter(Boolean),
+    mins = ts.length > 1 ? Math.round((Math.max(...ts) - Math.min(...ts)) / 6e4) : null,
+    qs = st.map(x => x.q).filter(v => v != null),
+    aq = qs.length ? qs.reduce((a, b) => a + b, 0) / qs.length : null,
+    lifts = [...new Set(st.map(x => x.n))],
+    dv = pv ? Math.round(((vol - pv) / pv) * 100) : null;
+  SHEET = { sum: 1 };
+  const el = document.getElementById('sheet');
+  el.innerHTML = `<div class="sheet-bg" onclick="closeSheet()"></div><div class="sheet-card tall" role="dialog" aria-modal="true" aria-labelledby="shT"><div class="sum-top"><span class="ok">${ICO.check}</span><div><div class="eyebrow">Workout complete · ${fmtD(today)}</div><h2 id="shT">${esc(PLAN[todayIdx].n)} done${inDl() ? ' (deload)' : ''}</h2></div></div>
+<div class="tiles">${tile('Sets', st.length, 'logged')}${tile('Volume', fmtT(vol), dv == null ? 'kg × reps' : `<span class="pill ${dv >= 0 ? 'up' : 'down'}">${dv >= 0 ? '+' : ''}${dv}%</span> vs last week`)}${tile('Time', mins != null ? mins + '<small> min</small>' : '–', 'first to last set')}</div>
 ${muscleCard(today)}
-${prs.length?`<h3 class="rc">New personal records</h3><div class="sum-g">${prs.map(x=>`<div class="sum-l"><span><b>${esc(x.n)}</b></span><span>${x.w}${kg(x.n)} × ${x.r}</span></div>`).join('')}</div>`:''}
-${lifts.length?`<h3 class="rc">Lifts</h3><div class="sum-g">${lifts.map(n=>{const a=st.filter(x=>x.n===n);return `<div class="sum-l"><span>${esc(n)}</span><span>${a.map(x=>x.w+'×'+x.r).join(', ')}</span></div>`}).join('')}</div>`:'<div class="mu" style="margin-top:10px">No weights logged today, but the session is ticked off.</div>'}
-${aq!=null?`<div class="mu sm" style="margin-top:12px">Average effort: <b style="color:var(--ink)">${aq.toFixed(1)} reps in reserve</b>. ${aq<1?'You pushed hard today. Prioritise sleep and food.':aq>3?'Plenty left in the tank. Push a little closer next time.':'Right in the sweet spot for building muscle.'}</div>`:''}
-<button class="btn" style="width:100%;margin-top:16px" onclick="shx()">Done</button></div>`;el.hidden=false}
-function startDl(){S.dlw=wk;S.dl=today;save();draw();toast('Deload week started. Weights are pre-filled at 60%.')}
-function endDl(){S.dlw=null;save();draw()}
-function markDl(){S.dl=today;save();draw()}
+${prs.length ? `<h3 class="rc">New personal records</h3><div class="sum-g">${prs.map(x => `<div class="sum-l"><span><b>${esc(x.n)}</b></span><span>${x.w}${kgUnit(x.n)} × ${x.r}</span></div>`).join('')}</div>` : ''}
+${
+  lifts.length
+    ? `<h3 class="rc">Lifts</h3><div class="sum-g">${lifts
+        .map(n => {
+          const a = st.filter(x => x.n === n);
+          return `<div class="sum-l"><span>${esc(n)}</span><span>${a.map(x => x.w + '×' + x.r).join(', ')}</span></div>`;
+        })
+        .join('')}</div>`
+    : '<div class="mu" style="margin-top:10px">No weights logged today, but the session is ticked off.</div>'
+}
+${aq != null ? `<div class="mu sm" style="margin-top:12px">Average effort: <b style="color:var(--ink)">${aq.toFixed(1)} reps in reserve</b>. ${aq < 1 ? 'You pushed hard today. Prioritise sleep and food.' : aq > 3 ? 'Plenty left in the tank. Push a little closer next time.' : 'Right in the sweet spot for building muscle.'}</div>` : ''}
+<button class="btn" style="width:100%;margin-top:16px" onclick="closeSheet()">Done</button></div>`;
+  el.hidden = false;
+}
+function startDl() {
+  S.dlw = weekKey;
+  S.dl = today;
+  save();
+  draw();
+  toast('Deload week started. Weights are pre-filled at 60%.');
+}
+function endDl() {
+  S.dlw = null;
+  save();
+  draw();
+}
+function markDl() {
+  S.dl = today;
+  save();
+  draw();
+}
 
-function mg(n){n=baseOf(n);return /crunch|hanging/i.test(n)?'Core':/squat|romanian|leg|hip|hack|calf|lunge/i.test(n)?'Legs':/curl|triceps|pushdown/i.test(n)?'Arms':/shoulder|lateral|face/i.test(n)?'Shoulders':/bench|fly|pec|incline/i.test(n)?'Chest':'Back'}
-function toolsCard(){const hb=S.habits[today]||{};return `<h1>Tools</h1>${profileCard()}<div class="card"><div class="ch"><span class="ci" style="--c:var(--orange)">${ICO.flame}</span><h2>Warm-up sets</h2></div><div style="display:flex;gap:6px"><input id="ww" class="fi" type="number" step="0.5" placeholder="Working weight (kg)"><button class="btn sm" onclick="wu()">Go</button></div><div id="wuo"></div></div><div class="card"><div class="ch"><span class="ci" style="--c:var(--rose)">${ICO.disc}</span><h2>Plate calculator</h2></div><div style="display:flex;gap:6px"><input id="pw" class="fi" type="number" step="0.5" placeholder="Total weight (kg)"><button class="btn sm" onclick="pl()">Go</button></div><div id="plo" class="mu" style="margin-top:8px"></div></div>${hid('habits')?'':`<div class="card"><div class="ch"><span class="ci" style="--c:var(--green)">${ICO.check}</span><h2>Daily habits</h2></div>${HAB.map((h,i)=>`<label class="row ${hb[i]?'done':''}"><input type="checkbox" ${hb[i]?'checked':''} onchange="hbt(${i})"><span class="t">${h}</span></label>`).join('')}</div>`}<div class="card"><div class="ch"><span class="ci" style="--c:var(--amber)">${ICO.pause}</span><h2>Deload</h2></div>${inDl()?`<div class="mu">Deload week in progress. Every lift is pre-filled at ~60% of your last working weight. Keep the same sets and reps, with 3+ reps in reserve.</div><button class="btn sm ghost" style="margin-top:10px" onclick="endDl()">End deload early</button>`:`<div class="mu">${dlTxt()}</div><div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn sm" onclick="startDl()">Start deload week</button><button class="btn sm ghost" onclick="markDl()">I’ve already done one</button></div>`}</div>${progCard()}${showCard()}${dataCard()}${cloudCard()}`}
+function muscleGroup(n) {
+  n = baseOf(n);
+  return /crunch|hanging/i.test(n)
+    ? 'Core'
+    : /squat|romanian|leg|hip|hack|calf|lunge/i.test(n)
+      ? 'Legs'
+      : /curl|triceps|pushdown/i.test(n)
+        ? 'Arms'
+        : /shoulder|lateral|face/i.test(n)
+          ? 'Shoulders'
+          : /bench|fly|pec|incline/i.test(n)
+            ? 'Chest'
+            : 'Back';
+}
+function toolsCard() {
+  const hb = S.habits[today] || {};
+  return `<h1>Tools</h1>${profileCard()}<div class="card"><div class="ch"><span class="ci" style="--c:var(--orange)">${ICO.flame}</span><h2>Warm-up sets</h2></div><div style="display:flex;gap:6px"><input id="ww" class="fi" type="number" step="0.5" placeholder="Working weight (kg)"><button class="btn sm" onclick="calcWarmup()">Go</button></div><div id="wuo"></div></div><div class="card"><div class="ch"><span class="ci" style="--c:var(--rose)">${ICO.disc}</span><h2>Plate calculator</h2></div><div style="display:flex;gap:6px"><input id="pw" class="fi" type="number" step="0.5" placeholder="Total weight (kg)"><button class="btn sm" onclick="pl()">Go</button></div><div id="plo" class="mu" style="margin-top:8px"></div></div>${isHidden('habits') ? '' : `<div class="card"><div class="ch"><span class="ci" style="--c:var(--green)">${ICO.check}</span><h2>Daily habits</h2></div>${HABITS.map((h, i) => `<label class="row ${hb[i] ? 'done' : ''}"><input type="checkbox" ${hb[i] ? 'checked' : ''} onchange="toggleHabit(${i})"><span class="t">${h}</span></label>`).join('')}</div>`}<div class="card"><div class="ch"><span class="ci" style="--c:var(--amber)">${ICO.pause}</span><h2>Deload</h2></div>${inDl() ? `<div class="mu">Deload week in progress. Every lift is pre-filled at ~60% of your last working weight. Keep the same sets and reps, with 3+ reps in reserve.</div><button class="btn sm ghost" style="margin-top:10px" onclick="endDl()">End deload early</button>` : `<div class="mu">${dlTxt()}</div><div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn sm" onclick="startDl()">Start deload week</button><button class="btn sm ghost" onclick="markDl()">I’ve already done one</button></div>`}</div>${progCard()}${showCard()}${dataCard()}${cloudCard()}`;
+}
 /* Estimated 1RM: average of Epley and Brzycki (more accurate than either alone at 2–10 reps).
    Reps in reserve are added back, so 80×5 @2 RIR counts as a 7-rep max. Reps are capped at 12
    because high-rep sets badly overestimate strength. Bodyweight-only sets (0 kg) give no estimate. */
-function e1(w,r,q){if(!(w>0)||!(r>0))return 0;let R=r+(q!=null?Math.min(+q,4):0);if(R<=1)return w;R=Math.min(R,12);return w*((1+R/30)+36/(37-R))/2}
-function e1inv(m,R){return R<=1?m:m*2/((1+R/30)+36/(37-R))}
-const ICP={coach:'<path d="M12 3.5 13.8 10 20 12l-6.2 2L12 20.5 10.2 14 4 12l6.2-2z"/>',today:'<path d="M3.5 11 12 4l8.5 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/>',plan:'<path d="M2 12h20"/><path d="M5.5 8.5v7M8.5 6v12M15.5 6v12M18.5 8.5v7"/>',meals:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.6"/>',progress:'<path d="M3 17.5 9 11.5l4 4 8-8.5"/><path d="M15 7h6v6"/>',tools:'<path d="M4 7h9M18 7h2M4 17h3M12 17h8"/><circle cx="15.5" cy="7" r="2.3"/><circle cx="9.5" cy="17" r="2.3"/>'};
-const IC=k=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICP[k]}</svg>`;
-function ring(pc){const r=30,c=2*Math.PI*r;return `<svg class="ring" viewBox="0 0 76 76" aria-hidden="true"><circle cx="38" cy="38" r="${r}" fill="none" stroke="var(--raise)" stroke-width="7"/><circle cx="38" cy="38" r="${r}" fill="none" stroke="var(--accent)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${c.toFixed(2)}" stroke-dashoffset="${(c*(1-pc/100)).toFixed(2)}" transform="rotate(-90 38 38)" style="transition:stroke-dashoffset .5s"/><text x="38" y="44" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Inter, sans-serif" font-weight="700" font-size="17" fill="var(--ink)">${pc}%</text></svg>`}
+function est1RM(w, r, q) {
+  if (!(w > 0) || !(r > 0)) return 0;
+  let R = r + (q != null ? Math.min(+q, 4) : 0);
+  if (R <= 1) return w;
+  R = Math.min(R, 12);
+  return (w * (1 + R / 30 + 36 / (37 - R))) / 2;
+}
+function e1inv(m, R) {
+  return R <= 1 ? m : (m * 2) / (1 + R / 30 + 36 / (37 - R));
+}
+const ICP = {
+  coach: '<path d="M12 3.5 13.8 10 20 12l-6.2 2L12 20.5 10.2 14 4 12l6.2-2z"/>',
+  today: '<path d="M3.5 11 12 4l8.5 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/>',
+  plan: '<path d="M2 12h20"/><path d="M5.5 8.5v7M8.5 6v12M15.5 6v12M18.5 8.5v7"/>',
+  meals: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.6"/>',
+  progress: '<path d="M3 17.5 9 11.5l4 4 8-8.5"/><path d="M15 7h6v6"/>',
+  tools:
+    '<path d="M4 7h9M18 7h2M4 17h3M12 17h8"/><circle cx="15.5" cy="7" r="2.3"/><circle cx="9.5" cy="17" r="2.3"/>'
+};
+const IC = k =>
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICP[k]}</svg>`;
+function ring(pc) {
+  const r = 30,
+    c = 2 * Math.PI * r;
+  return `<svg class="ring" viewBox="0 0 76 76" aria-hidden="true"><circle cx="38" cy="38" r="${r}" fill="none" stroke="var(--raise)" stroke-width="7"/><circle cx="38" cy="38" r="${r}" fill="none" stroke="var(--accent)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${c.toFixed(2)}" stroke-dashoffset="${(c * (1 - pc / 100)).toFixed(2)}" transform="rotate(-90 38 38)" style="transition:stroke-dashoffset .5s"/><text x="38" y="44" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Inter, sans-serif" font-weight="700" font-size="17" fill="var(--ink)">${pc}%</text></svg>`;
+}

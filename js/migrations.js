@@ -1,6 +1,72 @@
 /* One-time updates to saved data */
 /* one-time plan update (Nov 2026): rep ranges for muscle growth, close-grip bench on Friday */
-const PLAN_V2={'Bench press (heavy)':'4×5–7','Incline DB press':'3×6–10','Cable fly / pec deck':'3×10–15','Seated shoulder press':'3×8–12','Lateral raises':'4×10–15','Triceps pushdown':'3×10–15','Overhead triceps extension':'3×10–15','Rack pull':'3×5–8','Pull-ups / lat pulldown':'4×5–8','Barbell row':'3×8–12','Seated cable row':'3×10–12','Face pulls':'3×12–20','Incline DB curl':'3×8–12','Leg press':'3×10–15','Seated leg curl':'3×8–12','Calf raises':'4×10–15','Cable crunch':'3×10–15','Bench press (volume)':'4×6–10','Chest-supported row':'4×8–12','Lat pulldown':'3×8–12','Preacher or cable curl':'3×8–12','Hip thrust':'4×8–12','Bulgarian split squat':'3×8–12 each','Hack squat / leg press':'3×10–15','Leg extension':'3×10–15','Hanging leg raise':'3×8–15'};
-function migratePlan(){if(S.pv2)return false;own();PLAN.forEach(d=>d.e.forEach(e=>{if(PLAN_V2[e[0]])e[1]=PLAN_V2[e[0]]}));const f=PLAN[4];if(f&&f.n==='Upper'){const j=f.e.findIndex(e=>e[0]==='DB shoulder press');if(j>=0){f.e[j]=['Close-grip bench press','3×6–8'];f.f='Bench volume, close-grip, back, arms'}}S.pv2=true;return true}
+const PLAN_V2 = {
+  'Bench press (heavy)': '4×5–7',
+  'Incline DB press': '3×6–10',
+  'Cable fly / pec deck': '3×10–15',
+  'Seated shoulder press': '3×8–12',
+  'Lateral raises': '4×10–15',
+  'Triceps pushdown': '3×10–15',
+  'Overhead triceps extension': '3×10–15',
+  'Rack pull': '3×5–8',
+  'Pull-ups / lat pulldown': '4×5–8',
+  'Barbell row': '3×8–12',
+  'Seated cable row': '3×10–12',
+  'Face pulls': '3×12–20',
+  'Incline DB curl': '3×8–12',
+  'Leg press': '3×10–15',
+  'Seated leg curl': '3×8–12',
+  'Calf raises': '4×10–15',
+  'Cable crunch': '3×10–15',
+  'Bench press (volume)': '4×6–10',
+  'Chest-supported row': '4×8–12',
+  'Lat pulldown': '3×8–12',
+  'Preacher or cable curl': '3×8–12',
+  'Hip thrust': '4×8–12',
+  'Bulgarian split squat': '3×8–12 each',
+  'Hack squat / leg press': '3×10–15',
+  'Leg extension': '3×10–15',
+  'Hanging leg raise': '3×8–15'
+};
+function migratePlan() {
+  if (S.pv2) return false;
+  ownPlan();
+  PLAN.forEach(d =>
+    d.e.forEach(e => {
+      if (PLAN_V2[e[0]]) e[1] = PLAN_V2[e[0]];
+    })
+  );
+  const f = PLAN[4];
+  if (f && f.n === 'Upper') {
+    const j = f.e.findIndex(e => e[0] === 'DB shoulder press');
+    if (j >= 0) {
+      f.e[j] = ['Close-grip bench press', '3×6–8'];
+      f.f = 'Bench volume, close-grip, back, arms';
+    }
+  }
+  S.pv2 = true;
+  return true;
+}
 /* one-time: split the combined pull-up/pulldown slot into Pull-ups (Pull day); lat pulldown stays on Friday */
-function migratePU(){if(S.pv3)return false;own();const o='Pull-ups / lat pulldown',n='Pull-ups';PLAN.forEach(d=>d.e.forEach(e=>{if(e[0]===o)e[0]=n}));if(S.log[o]){S.log[n]=(S.log[n]||[]).concat(S.log[o]).sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:0);delete S.log[o]}if(S.notes&&S.notes[o]){S.notes[n]=S.notes[o];delete S.notes[o]}if(S.cx===o)S.cx=n;S.pv3=true;return true}
+function migratePU() {
+  if (S.pv3) return false;
+  ownPlan();
+  const o = 'Pull-ups / lat pulldown',
+    n = 'Pull-ups';
+  PLAN.forEach(d =>
+    d.e.forEach(e => {
+      if (e[0] === o) e[0] = n;
+    })
+  );
+  if (S.log[o]) {
+    S.log[n] = (S.log[n] || []).concat(S.log[o]).sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
+    delete S.log[o];
+  }
+  if (S.notes && S.notes[o]) {
+    S.notes[n] = S.notes[o];
+    delete S.notes[o];
+  }
+  if (S.cx === o) S.cx = n;
+  S.pv3 = true;
+  return true;
+}
