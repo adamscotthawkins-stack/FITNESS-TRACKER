@@ -1,6 +1,7 @@
 /* Start-up: apply the saved plan, run one-time updates, draw, and set up the app */
 applyPlan();
 wmSwipe();
+setInterval(conTick,1000);
 document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(SH)shx();else if(WM)wmClose()});
 if(migratePlan()|migratePU()|migrateCalf()|rollNotes()|migrateGoals())try{localStorage.setItem('fit1',JSON.stringify(S))}catch(e){}
 draw();
