@@ -1,7 +1,7 @@
 {
-  "name": "Fitness",
-  "short_name": "Fitness",
-  "description": "Gym, meals and progress tracker",
+  "name": "Overload",
+  "short_name": "Overload",
+  "description": "Gym, meals and progress tracker built around progressive overload",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

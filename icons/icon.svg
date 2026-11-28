@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1A1E27"/><stop offset="1" stop-color="#07080B"/></linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.45" r="0.62"><stop offset="0" stop-color="#3D7BFF" stop-opacity="0.20"/><stop offset="1" stop-color="#3D7BFF" stop-opacity="0"/></radialGradient>
+    <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6A9BFF"/><stop offset="1" stop-color="#2E62E6"/></linearGradient>
+    <linearGradient id="hot" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#FF4A2E"/><stop offset="1" stop-color="#FF8A3D"/></linearGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C9CED8"/><stop offset="1" stop-color="#7C8494"/></linearGradient>
+  </defs>
+  <g id="art">
+    <rect width="1024" height="1024" fill="url(#bg)"/>
+    <rect width="1024" height="1024" fill="url(#glow)"/>
+    <g transform="translate(-77 0)"><g transform="translate(512 512) skewX(-10) translate(-512 -512)">
+    <!-- the bar: sleeve from the outer end (left), on past the inner stop toward the middle of the bar (right) -->
+    <rect x="196" y="488" width="900" height="48" rx="14" fill="url(#steel)"/>
+    <!-- clip on the outer end -->
+    <rect x="238" y="454" width="38" height="116" rx="12" fill="url(#steel)"/>
+    <!-- plates, smallest outside to biggest inside: each session a little heavier -->
+    <rect x="300" y="387.0" width="104" height="250" rx="26" fill="url(#plate)"/>
+    <rect x="436" y="332.0" width="104" height="360" rx="26" fill="url(#plate)"/>
+    <rect x="572" y="272.0" width="104" height="480" rx="26" fill="url(#plate)"/>
+    <rect x="708" y="202.0" width="104" height="620" rx="26" fill="url(#hot)"/>
+    <!-- inner stop -->
+    <rect x="834" y="420" width="46" height="184" rx="14" fill="url(#steel)"/>
+    </g></g>
+  </g>
+</svg>

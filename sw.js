@@ -1,7 +1,7 @@
 // Offline support. The app's own files are fetched fresh first (so an update shows up on the next open),
 // waiting up to 3 seconds; with no or slow signal the saved copy is used instead.
 // Libraries (versioned file names) and fonts are served from the saved copy.
-const VERSION = 'fitness-v19';
+const VERSION = 'fitness-v20';
 const WAIT_MS = 3000;
 const CORE = [
   './',

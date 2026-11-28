@@ -1,4 +1,4 @@
-# Fitness
+# Overload
 
 A phone app for training, meals and progress:
 
@@ -14,7 +14,7 @@ It's a home-screen web app (PWA). No app store is needed and it works offline.
 
 1. Open the app's GitHub Pages link in **Safari**.
 2. Tap **Share**, then **Add to Home Screen**, then **Add**.
-3. Open it from the **Fitness** icon. It runs full-screen like a normal app.
+3. Open it from the **Overload** icon. It runs full-screen like a normal app.
 
 ## Your data
 
@@ -33,7 +33,7 @@ Everything is saved on the phone. Deleting the app from the home screen deletes 
 | `js/main.js` | Start-up code, runs last |
 | `manifest.webmanifest` | App name, icon and full-screen setting |
 | `sw.js` | Offline support |
-| `icons/` | Home-screen icons |
+| `icons/` | Home-screen icons (`icon.svg` is the source; the PNGs are rendered from it) |
 | `tests/` | Automated tests for the training logic (`npm test`) |
 | `ARCHITECTURE.md` | How the code fits together: state, drawing, files, conventions |
 | `.prettierrc.json` | Code formatting settings |

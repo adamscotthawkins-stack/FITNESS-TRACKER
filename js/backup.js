@@ -163,7 +163,7 @@ function restoreFile(inp) {
       RS = o;
       draw();
     } catch (e) {
-      toast('That file isn’t a Fitness Dashboard backup.');
+      toast('That file isn’t an Overload backup.');
     }
   };
   r.readAsText(f);

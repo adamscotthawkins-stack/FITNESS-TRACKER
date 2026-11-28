@@ -74,7 +74,7 @@ async function cloudSave(manual) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        message: 'Fitness backup ' + today,
+        message: 'Overload backup ' + today,
         content: toBase64(JSON.stringify(cloudObj())),
         sha: sha
       })
@@ -156,7 +156,7 @@ async function cloudRestore() {
       );
     const o = JSON.parse(await r.text());
     if (!o || typeof o !== 'object' || !(o.log || o.weights || o.plan))
-      throw new Error('The cloud file isn’t a Fitness backup.');
+      throw new Error('The cloud file isn’t an Overload backup.');
     RS = o;
     draw();
     setTimeout(() => {
