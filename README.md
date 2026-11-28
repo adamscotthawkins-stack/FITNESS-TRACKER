@@ -5,6 +5,7 @@ A phone app for training, meals and progress:
 - **Training:** weekly plan, set logging with add-weight tips, workout mode (one exercise at a time with big buttons and a rest timer), exercise how-to guides, lift history, swaps, deloads
 - **Progress:** custom goals (any lift or body weight, by a date), monthly recap, this week's muscle map, charts, calendar, badges
 - **Food:** meal plan, food search and barcode scanning (Open Food Facts), saved and recent foods, calorie and protein targets from your profile
+- **Coach:** chat with Claude about your training, food and plan; Claude can propose plan, progression and goal changes that you apply with one tap (uses your own Anthropic API key, stored only on the phone)
 - **Your data:** stays on the phone, with backup reminders and optional automatic backup to a private GitHub repository
 
 It's a home-screen web app (PWA). No app store is needed and it works offline.
@@ -51,3 +52,7 @@ Barcode scanning uses the phone's built-in barcode reader when available, otherw
 [barcode-detector](https://github.com/Sec-ant/barcode-detector) with
 [zxing-wasm](https://github.com/Sec-ant/zxing-wasm) (both MIT License), loaded from jsDelivr
 the first time the scanner opens. Food data comes from [Open Food Facts](https://world.openfoodfacts.org).
+
+The coach uses the [Anthropic TypeScript SDK](https://github.com/anthropics/anthropic-sdk-typescript)
+1.8.0 (MIT License), bundled for the browser into `vendor/anthropic-sdk-1.8.0.min.mjs` with esbuild
+(licence in `vendor/anthropic-sdk-LICENSE.txt`). It is loaded only when the coach is used.

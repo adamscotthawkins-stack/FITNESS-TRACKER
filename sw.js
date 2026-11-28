@@ -1,6 +1,6 @@
 // Offline support. The app opens instantly from the cache, and any update
 // is fetched in the background and used the next time the app is opened.
-const VERSION = 'fitness-v15';
+const VERSION = 'fitness-v16';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/data.js',
   'js/state.js',
@@ -27,6 +27,7 @@ const CORE = ['./', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/food.js',
   'js/howto.js',
   'js/insights.js',
+  'js/coach.js',
   'js/stretches.js',
   'js/review.js',
   'js/backup.js',
