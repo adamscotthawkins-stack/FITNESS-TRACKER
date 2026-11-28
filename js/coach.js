@@ -9,13 +9,17 @@ function coCfg(){try{const c=JSON.parse(localStorage.getItem(CO_KEY)||'null');re
 function coSetCfg(c){try{if(c)localStorage.setItem(CO_KEY,JSON.stringify(c));else localStorage.removeItem(CO_KEY)}catch(e){}}
 function coModel(){const c=coCfg();return (c&&CO_MODELS.find(m=>m[0]===c.model))||CO_MODELS[0]}
 /* conversation: API-format messages (assistant content kept whole, thinking blocks included) + proposal states */
-function coLoad(){if(COM)return COM;try{COM=JSON.parse(localStorage.getItem(CO_CHAT)||'null')}catch(e){}if(!COM||!Array.isArray(COM.m))COM={m:[],p:{},cost:0};return COM}
+/* Claude's thinking blocks are bound to the exact conversation that produced them (system prompt, tools and every
+   earlier message, byte for byte). So the system prompt is frozen, the history is only ever appended to, and the data
+   snapshot travels inside the user's message. Removing ALL thinking blocks is always allowed. */
+function coStrip(C){C.m.forEach(m=>{if(m.role==='assistant'&&Array.isArray(m.content))m.content=m.content.filter(b=>b.type!=='thinking'&&b.type!=='redacted_thinking')})}
+function coLoad(){if(COM)return COM;try{COM=JSON.parse(localStorage.getItem(CO_CHAT)||'null')}catch(e){}if(!COM||!Array.isArray(COM.m))COM={m:[],p:{},cost:0,v:2};if((COM.v||1)<2){coStrip(COM);COM.v=2;COM.snap=null;try{localStorage.setItem(CO_CHAT,JSON.stringify(COM))}catch(e){}}return COM}
 function coSave(){try{localStorage.setItem(CO_CHAT,JSON.stringify(COM))}catch(e){}}
 
 /* ---------- what Claude is told ---------- */
 const CO_SYS=`You are the coach inside the user's personal gym-tracking app. You help with training, progression, exercise choice and form, recovery, and nutrition for their goals.
 
-Each request includes a snapshot of their app data: profile, goals, weekly plan, recent logged sets (weight × reps, @ = reps in reserve), body weight, notes and today's food. Use their real numbers and exercise names; never invent data. If something isn't in the snapshot, say so.
+Messages from the user may start with an APP DATA SNAPSHOT block: the app's current data. The newest snapshot is the current state; older ones show what it was earlier in the chat. It covers profile, goals, weekly plan, recent logged sets (weight × reps, @ = reps in reserve), body weight, notes and today's food. Use their real numbers and exercise names; never invent data. If something isn't in the snapshot, say so.
 
 The app's progression rules: exercises use a sets × rep range (e.g. 3×8–12). Double progression adds reps until every set hits the top of the range, then adds weight. Warm-ups (under 70% of the day's top weight) don't count. Effort is logged as RIR (reps in reserve); RPE = 10 − RIR.
 
@@ -98,29 +102,39 @@ function coErr(e){const A=CO.sdk||{};return A.AuthenticationError&&e instanceof 
 :A.APIConnectionError&&e instanceof A.APIConnectionError?'Couldn’t reach Claude. Check your internet connection.'
 :A.APIError&&e instanceof A.APIError?'Claude returned an error ('+e.status+'). Try again.':'Something went wrong talking to Claude. Try again.'}
 async function coSend(text,label){text=String(text||'').trim();if(!text||CO.busy)return;if(!coCfg()){toast('Add your API key first.');return}
-const C=coLoad();C.m.push({role:'user',content:text,...(label?{label}:{})});coSave();CO.busy=true;CO.err='';CO.live={t:'',think:true};coRender(true);
-const msgs=()=>C.m.map(m=>({role:m.role,content:m.content}));let guard=0,jsonRetry=0;
+const C=coLoad(),snap=coSnapshot();
+/* a fresh snapshot only when the data changed since the last one sent; it is part of this message from now on */
+C.m.push({role:'user',content:snap!==C.snap?[{type:'text',text:snap},{type:'text',text:text}]:text,q:text,...(label?{label}:{})});C.snap=snap;
+coTrim(C);coSave();CO.busy=true;CO.err='';CO.live={t:'',think:true};coRender(true);
+const msgs=()=>C.m.map(m=>({role:m.role,content:m.content}));let guard=0,jsonRetry=0,stripped=false;
 try{const client=await coClient(),M=coModel();
-while(guard++<5){const req={model:M[0],max_tokens:32000,output_config:{effort:'medium'},cache_control:{type:'ephemeral'},
-system:[{type:'text',text:CO_SYS},{type:'text',text:coSnapshot()}],tools:CO_TOOLS,messages:msgs()};
+while(guard++<6){const req={model:M[0],max_tokens:32000,output_config:{effort:'medium'},cache_control:{type:'ephemeral'},system:[{type:'text',text:CO_SYS}],tools:CO_TOOLS,messages:msgs()};
 /* server-side fallback if a safety classifier declines (Opus and Sonnet; Haiku has none) */
 const fb=M[0]!=='claude-haiku-5-5',stream=fb?client.beta.messages.stream({...req,betas:['server-side-fallback-2026-07-01'],fallbacks:'default'}):client.messages.stream(req);
 CO.live={t:'',think:true};coLive();
 stream.on('streamEvent',ev=>{if(ev.type==='content_block_start'&&ev.content_block.type==='tool_use'){CO.live.tool=true;coLive()}});
 stream.on('text',d=>{CO.live.think=false;CO.live.t+=d;coLive()});
-let msg;try{msg=await stream.finalMessage();jsonRetry=0}catch(e){if(e instanceof CO.sdk.APIError||jsonRetry++>=1)throw e;continue}
+let msg;try{msg=await stream.finalMessage();jsonRetry=0}catch(e){
+/* earlier thinking blocks no longer match the conversation: drop them all (allowed) and retry once */
+if(!stripped&&CO.sdk.BadRequestError&&e instanceof CO.sdk.BadRequestError&&/thinking|signature|prefix/i.test(String(e.message))){stripped=true;coStrip(C);coSave();continue}
+if(e instanceof CO.sdk.APIError||jsonRetry++>=1)throw e;continue}
 const u=msg.usage||{};C.cost+=((u.input_tokens||0)*M[3]+(u.cache_creation_input_tokens||0)*M[3]*1.25+(u.cache_read_input_tokens||0)*M[5]+(u.output_tokens||0)*M[4])/1e6;
-if(msg.stop_reason==='refusal'){C.m.push({role:'assistant',content:msg.content.filter(b=>b.type!=='tool_use'),note:'Claude couldn’t help with that one. Try asking differently.'});break}
-const uses=msg.content.filter(b=>b.type==='tool_use');
+const uses=msg.content.filter(b=>b.type==='tool_use'),
+/* a turn whose tool calls can't run is kept without them; its thinking (the trailing run) goes too, which keeps the rest valid */
+noTools=()=>msg.content.filter(b=>b.type!=='tool_use'&&b.type!=='thinking'&&b.type!=='redacted_thinking');
+if(msg.stop_reason==='refusal'){C.m.push({role:'assistant',content:uses.length?noTools():msg.content,note:'Claude couldn’t help with that one. Try asking differently.'});break}
 if(msg.stop_reason==='pause_turn'){C.m.push({role:'assistant',content:msg.content});continue}
-if(!uses.length||msg.stop_reason==='end_turn'&&!uses.length){C.m.push({role:'assistant',content:msg.content});break}
-if(msg.stop_reason==='max_tokens'){C.m.push({role:'assistant',content:msg.content.filter(b=>b.type!=='tool_use'),note:'The reply was too long and got cut off. Try a narrower question.'});break}
+if(!uses.length){C.m.push({role:'assistant',content:msg.content});break}
+if(msg.stop_reason==='max_tokens'){C.m.push({role:'assistant',content:noTools(),note:'The reply was too long and got cut off. Try a narrower question.'});break}
 C.m.push({role:'assistant',content:msg.content});
 const res=uses.map(b=>{const er=coCheck(b.name,b.input);if(er)return {type:'tool_result',tool_use_id:b.id,is_error:true,content:'Not shown to the user: '+er+'. Fix it and propose again.'};
 C.p[b.id]='open';return {type:'tool_result',tool_use_id:b.id,content:'Shown to the user as a proposal card with Apply and Dismiss buttons. Nothing has changed yet.'}});
 C.m.push({role:'user',content:res});coSave()}}
 catch(e){CO.err=coErr(e)}
-CO.busy=false;CO.live=null;if(C.m.length>60){C.m=C.m.slice(-60);while(C.m.length&&!(C.m[0].role==='user'&&typeof C.m[0].content==='string'))C.m.shift()}coSave();coRender(true)}
+CO.busy=false;CO.live=null;coSave();coRender(true)}
+/* very long chats: drop the oldest turns together with every thinking block (allowed), and resend the data snapshot */
+function coTrim(C){if(C.m.length<=60)return;let k=C.m.length-50;while(k<C.m.length&&!(C.m[k].role==='user'&&C.m[k].q))k++;if(k>=C.m.length-1)return;
+C.m=C.m.slice(k);coStrip(C);const f=C.m[0],snap=coSnapshot();if(typeof f.content==='string'){f.content=[{type:'text',text:snap},{type:'text',text:f.content}];C.snap=snap}else C.snap=f.content[0].text}
 function coPropose(id,ok){const C=coLoad();if(C.p[id]!=='open')return;let b=null;C.m.forEach(m=>{if(m.role==='assistant'&&Array.isArray(m.content))m.content.forEach(x=>{if(x.type==='tool_use'&&x.id===id)b=x})});if(!b)return;
 if(ok){const er=coCheck(b.name,b.input);if(er){toast('This change no longer fits your plan ('+esc(er)+'). Ask Claude again.');return}coApply(b.name,b.input);C.p[id]='applied';toast('Applied')}else C.p[id]='dismissed';coSave();draw()}
 
@@ -128,7 +142,7 @@ if(ok){const er=coCheck(b.name,b.input);if(er){toast('This change no longer fits
 function mdLite(t){const out=[];let ul=false;String(t||'').split('\n').forEach(l=>{const b=l.match(/^\s*[-•*]\s+(.*)/),n=l.match(/^\s*(\d+)[.)]\s+(.*)/),h=l.match(/^#{1,4}\s+(.*)/);
 const inl=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/(^|[^*])\*([^*]+)\*/g,'$1<i>$2</i>').replace(/`([^`]+)`/g,'<code>$1</code>');
 if(b||n){if(!ul){out.push('<ul>');ul=true}out.push('<li>'+inl(b?b[1]:n[2])+'</li>')}else{if(ul){out.push('</ul>');ul=false}if(h)out.push('<p><b>'+inl(h[1])+'</b></p>');else if(l.trim())out.push('<p>'+inl(l)+'</p>')}});if(ul)out.push('</ul>');return out.join('')}
-function coBubbles(){const C=coLoad(),out=[];C.m.forEach(m=>{if(m.role==='user'){if(typeof m.content==='string')out.push(`<div class="cb u">${m.label?`<span class="cb-l">${ICO.sparkle}${esc(m.label)}</span>`:esc(m.content).replace(/\n/g,'<br>')}</div>`);return}
+function coBubbles(){const C=coLoad(),out=[];C.m.forEach(m=>{if(m.role==='user'){const q=m.q!=null?m.q:typeof m.content==='string'?m.content:null;if(q!=null)out.push(`<div class="cb u">${m.label?`<span class="cb-l">${ICO.sparkle}${esc(m.label)}</span>`:esc(q).replace(/\n/g,'<br>')}</div>`);return}
 const tx=(m.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n\n');if(tx.trim())out.push(`<div class="cb a">${mdLite(tx)}</div>`);
 (m.content||[]).filter(b=>b.type==='tool_use').forEach(b=>{const st=C.p[b.id];if(!st)return;out.push(`<div class="pc ${st}"><div class="pc-h">${ICO.sparkle}<b>${CO_TITLE[b.name]||'Proposal'}</b>${st==='applied'?'<span class="pill up">Applied</span>':st==='dismissed'?'<span class="pill">Dismissed</span>':''}</div>${b.input.summary?`<div class="pc-s">${esc(b.input.summary)}</div>`:''}${b.input.reason?`<div class="pc-s">${esc(b.input.reason)}</div>`:''}<ul>${coDesc(b.name,b.input).map(x=>'<li>'+x+'</li>').join('')}</ul>${st==='open'?`<div class="pc-a"><button class="btn sm ghost" onclick="coPropose('${b.id}',false)">Dismiss</button><button class="btn sm" onclick="coPropose('${b.id}',true)">Apply</button></div>`:''}</div>`)});
 if(m.note)out.push(`<div class="cb n">${esc(m.note)}</div>`)});return out.join('')}
@@ -145,8 +159,8 @@ return `<div class="co-head"><h1>Coach</h1><button class="ib" onclick="CO.set=tr
 ${coBubbles()}<div id="co-live">${coLiveHtml()}</div>${CO.err?`<div class="cb n err">${CO.err} <button class="link" onclick="coRetry()">Try again</button></div>`:''}<div id="co-end"></div></div>
 <div class="co-in"><textarea id="co-t" rows="1" placeholder="Ask your coach…" aria-label="Message" oninput="this.style.height='auto';this.style.height=Math.min(140,this.scrollHeight)+'px'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();coGo()}" ${CO.busy?'disabled':''}></textarea><button class="btn" onclick="coGo()" ${CO.busy?'disabled':''} aria-label="Send">${ICO.right}</button></div>`}
 function coGo(){const el=document.getElementById('co-t');if(!el)return;const v=el.value;el.value='';coSend(v)}
-function coRetry(){const C=coLoad();const last=C.m[C.m.length-1];if(last&&last.role==='user'&&typeof last.content==='string'){C.m.pop();CO.err='';coSend(last.content,last.label)}else{CO.err='';draw()}}
-function coClear(){COM={m:[],p:{},cost:0};coSave();CO.err='';draw()}
+function coRetry(){const C=coLoad();const last=C.m[C.m.length-1];if(last&&last.role==='user'&&(last.q!=null||typeof last.content==='string')){C.m.pop();C.snap=null;CO.err='';coSend(last.q!=null?last.q:last.content,last.label)}else{CO.err='';draw()}}
+function coClear(){COM={m:[],p:{},cost:0,v:2};coSave();CO.err='';draw()}
 function coSetup(c){const M=coModel();return `<div class="card"><div class="ch"><span class="ci" style="--c:var(--violet)">${ICO.sparkle}</span><div class="ct"><h2>${c?'Coach settings':'Ask Claude about your training'}</h2><div class="mu sm">Uses your own Anthropic API key</div></div></div>
 ${c?'':`<div class="mu" style="margin-bottom:10px">Claude can review your week, answer questions about training and food, and suggest changes to your plan, which you approve with one tap.</div>
 <details class="rcp" open><summary><b>How to get an API key</b><br><span class="mu">About 3 minutes, once</span></summary><ol class="cl-steps">

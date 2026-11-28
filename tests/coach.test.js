@@ -95,7 +95,9 @@ test('a question that leads to a proposal: card shown, tool result sent back, no
   assert.equal(calls[0].fallbacks, 'default');
   assert.equal(calls[0].output_config.effort, 'medium');
   assert.ok(calls[0].tools.every(t => t.eager_input_streaming === true));
-  assert.match(calls[0].system[1].text, /APP DATA SNAPSHOT/);
+  assert.equal(calls[0].system.length, 1, 'system prompt is fixed text only');
+  assert.match(calls[0].messages[0].content[0].text, /APP DATA SNAPSHOT/, 'data travels in the first message');
+  assert.equal(calls[0].messages[0].content[1].text, 'My shoulder hurts on bench');
   const second = calls[1].messages;
   assert.equal(second[second.length - 1].content[0].type, 'tool_result');
   assert.equal(second[second.length - 1].content[0].tool_use_id, 'tu1');
@@ -123,4 +125,88 @@ test('an invalid proposal is not shown and Claude is told why', async () => {
   assert.equal(tr.is_error, true);
   assert.match(tr.content, /"Nope" is not on Mon/);
   assert.equal(a.run('COM.p.tu9'), undefined);
+});
+
+/* A fake SDK that records every request and replays scripted replies (or errors). */
+function fakeSdk(a, replies, calls) {
+  a.ctx.__replies = replies; a.ctx.__calls = calls;
+  a.run(`(()=>{class APIError extends Error{};class BadRequestError extends APIError{};
+    const stream=req=>{__calls.push(JSON.parse(JSON.stringify(req)));const r=__replies.shift();
+      return {on:()=>{},finalMessage:async()=>{if(r.error)throw new BadRequestError(r.error);return r}}};
+    CO.sdk={APIError,BadRequestError,Anthropic:class{constructor(){this.beta={messages:{stream}};this.messages={stream}}}};COM=null})()`);
+}
+const think = (sig) => ({ type: 'thinking', thinking: '', signature: sig });
+
+test('the conversation is append-only: same system prompt and same earlier messages on every request, even after applying a change', async () => {
+  const a = app();
+  a.store['fit-claude'] = JSON.stringify({ key: 'sk-ant-test-0000000000000000000000', model: 'claude-opus-5-5' });
+  const calls = [];
+  fakeSdk(a, [
+    { stop_reason: 'tool_use', usage: {}, content: [think('s1'), { type: 'text', text: 'Swap it.' }, { type: 'tool_use', id: 'tu1', name: 'propose_plan_changes', input: { summary: 'Swap', changes: [{ action: 'swap_exercise', day: 'Mon', exercise: 'Bench press (heavy)', new_exercise: 'DB bench press' }] } }] },
+    { stop_reason: 'end_turn', usage: {}, content: [think('s2'), { type: 'text', text: 'Tap Apply.' }] },
+    { stop_reason: 'end_turn', usage: {}, content: [think('s3'), { type: 'text', text: 'Good week.' }] },
+    { stop_reason: 'end_turn', usage: {}, content: [{ type: 'text', text: 'Yes.' }] },
+  ], calls);
+  await a.run("coSend('Shoulder hurts')");
+  a.run("coPropose('tu1',true)"); // the plan changes between questions
+  await a.run("coSend('How has this week gone?')");
+  await a.run("coSend('Anything else?')");
+  assert.equal(calls.length, 4);
+  const sys = calls.map(c => JSON.stringify(c.system) + JSON.stringify(c.tools));
+  assert.ok(sys.every(x => x === sys[0]), 'system prompt and tools never change');
+  for (let i = 1; i < calls.length; i++) {
+    const prev = calls[i - 1].messages, cur = calls[i].messages;
+    assert.equal(JSON.stringify(cur.slice(0, prev.length)), JSON.stringify(prev), `request ${i + 1} starts with request ${i} unchanged`);
+  }
+  // thinking blocks are passed back untouched
+  assert.equal(JSON.stringify(calls[2].messages[1].content[0]), JSON.stringify(think('s1')));
+  // the question after Apply carries a fresh snapshot showing the new plan
+  const q2 = calls[2].messages[calls[2].messages.length - 1].content;
+  assert.match(q2[0].text, /• DB bench press/);
+  assert.equal(q2[1].text, 'How has this week gone?');
+  // nothing changed between the 2nd and 3rd questions, so no new snapshot
+  assert.equal(calls[3].messages[calls[3].messages.length - 1].content, 'Anything else?');
+});
+
+test('a thinking-signature error is fixed by dropping the old thinking blocks and retrying once', async () => {
+  const a = app();
+  a.store['fit-claude'] = JSON.stringify({ key: 'sk-ant-test-0000000000000000000000', model: 'claude-opus-5-5' });
+  // a chat saved by the earlier version: snapshot in the system prompt, thinking blocks bound to it
+  a.store['fit-chat'] = JSON.stringify({ m: [{ role: 'user', content: 'Add arm work' }, { role: 'assistant', content: [think('old'), { type: 'text', text: 'Done as a card.' }] }], p: {}, cost: 0 });
+  const calls = [];
+  fakeSdk(a, [
+    { stop_reason: 'end_turn', usage: {}, content: [{ type: 'text', text: 'Fine.' }] },
+  ], calls);
+  await a.run("coSend('How has this week gone?')");
+  assert.equal(calls.length, 1);
+  assert.ok(!JSON.stringify(calls[0].messages).includes('"thinking"'), 'old chats are cleaned when loaded');
+  assert.equal(a.run('CO.err'), '');
+
+  // and if the API still objects, the app strips and retries by itself
+  a.store['fit-chat'] = JSON.stringify({ v: 2, m: [{ role: 'user', content: 'Hi' }, { role: 'assistant', content: [think('bad'), { type: 'text', text: 'Hello.' }] }], p: {}, cost: 0 });
+  const calls2 = [];
+  fakeSdk(a, [
+    { error: 'messages.1.content.0: Invalid `signature` in `thinking` block.' },
+    { stop_reason: 'end_turn', usage: {}, content: [{ type: 'text', text: 'Recovered.' }] },
+  ], calls2);
+  await a.run("coSend('Next question')");
+  assert.equal(calls2.length, 2);
+  assert.match(JSON.stringify(calls2[0].messages), /"signature":"bad"/);
+  assert.doesNotMatch(JSON.stringify(calls2[1].messages), /"thinking"/);
+  assert.equal(a.run('CO.err'), '');
+  assert.match(a.run("JSON.stringify(COM.m[COM.m.length-1].content)"), /Recovered/);
+});
+
+test('a reply cut off mid-proposal is kept without its tool call or thinking, so the chat stays valid', async () => {
+  const a = app();
+  a.store['fit-claude'] = JSON.stringify({ key: 'sk-ant-test-0000000000000000000000', model: 'claude-opus-5-5' });
+  const calls = [];
+  fakeSdk(a, [
+    { stop_reason: 'max_tokens', usage: {}, content: [think('t'), { type: 'text', text: 'Here is a big plan' }, { type: 'tool_use', id: 'tuX', name: 'propose_plan_changes', input: { summary: 'x' } }] },
+    { stop_reason: 'end_turn', usage: {}, content: [{ type: 'text', text: 'ok' }] },
+  ], calls);
+  await a.run("coSend('Rewrite my whole plan')");
+  await a.run("coSend('Shorter please')");
+  const asst = calls[1].messages[1];
+  assert.equal(JSON.stringify(asst.content), JSON.stringify([{ type: 'text', text: 'Here is a big plan' }]));
 });
