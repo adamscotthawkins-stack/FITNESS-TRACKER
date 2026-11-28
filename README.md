@@ -39,8 +39,7 @@ Everything is saved on the phone. Deleting the app from the home screen deletes 
 ## Updating
 
 Change the files, run `npm test`, then raise `VERSION` in `sw.js` (for example `fitness-v2`)
-so phones pick up the new version. A new script file also needs adding to `CORE` in `sw.js`. Changes show the second time the app is
-opened after an update.
+so phones pick up the new version. A new script file also needs adding to `CORE` in `sw.js`. Changes show the next time the app is opened with a signal (it waits up to 3 seconds for fresh files, otherwise uses the saved copy).
 
 ## Credits
 
