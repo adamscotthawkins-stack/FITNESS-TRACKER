@@ -106,7 +106,9 @@ function logSet(d, i, w, r, q) {
   const o = { d: today, w: w, r: r, t: Date.now() };
   if (q != null && q !== '') o.q = +q;
   const pr =
-    !inDl() && (S.log[n] || []).length && est1RM(w, r, o.q) > Math.max(...S.log[n].map(x => est1RM(x.w, x.r, x.q)));
+    !inDl() &&
+    (S.log[n] || []).length &&
+    est1RM(w, r, o.q) > Math.max(...S.log[n].map(x => est1RM(x.w, x.r, x.q)));
   (S.log[n] = S.log[n] || []).push(o);
   S.done[doneKey(d, i)] = true;
   save();

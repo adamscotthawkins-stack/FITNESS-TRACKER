@@ -147,7 +147,9 @@ async function cloudRestore() {
   const c = cloudCfg();
   if (!c) return;
   try {
-    const r = await githubApi(c, '/contents/' + CFILE, { headers: { Accept: 'application/vnd.github.raw+json' } });
+    const r = await githubApi(c, '/contents/' + CFILE, {
+      headers: { Accept: 'application/vnd.github.raw+json' }
+    });
     if (!r.ok)
       throw new Error(
         r.status === 404 ? 'There’s no backup in that repository yet.' : ghErr(r, 'read the backup')

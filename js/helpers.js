@@ -1,5 +1,5 @@
-/* Shared UI helpers */
-/* ---------- vivid UI helpers ---------- */
+/* Shared UI helpers: icons, formatting, tiles and rings, short-lived screen state, the exercise name index */
+/* 1 = play the cards' entrance animation on the next draw() (set when switching tabs) */
 let ANIMATE_ENTRY = 1;
 function greet() {
   const h = new Date().getHours();
@@ -16,7 +16,8 @@ function weekStrip() {
     return `<div class="wd ${st}${i === todayIdx ? ' today' : ''}"><i>${dn ? ICO.check : ''}</i>${x.slice(0, 1)}</div>`;
   }).join('')}</div>`;
 }
-let RING_ID = 0;
+let RING_ID = 0; // unique ids for SVG gradients
+/* a macro ring: value v of target t, unit u, label l, gradient colours c1 -> c2 */
 function mring(v, t, u, l, c1, c2) {
   const r = 40,
     C = 2 * Math.PI * r,
@@ -31,12 +32,16 @@ function isDB(n) {
 function kgUnit(n) {
   return isDB(n) ? ' kg each' : ' kg';
 }
+/* Short-lived screen state (not saved): which picker is open, which delete is waiting for a second tap */
 let MEAL_SWAP_OPEN = null,
   PHOTO_DELETE = null,
   WEIGHT_DELETE = null,
   RESET_CONFIRM = false,
   SHEET = null,
   CAL_MONTH = 0;
+/* TIP: chart tooltip text by chart id.
+   NAMES: exercise names get a number so inline onclick="..." handlers can pass an index instead of
+   a name that might contain quotes; nameIdx(name) gives the number, NAMES[i] gives the name back. */
 const TIP = {},
   NAMES = [];
 function nameIdx(n) {

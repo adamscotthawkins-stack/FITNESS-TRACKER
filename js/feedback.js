@@ -63,7 +63,9 @@ function fbInfo(d, i) {
     prev = L.filter(x => x.d !== today),
     pv = prev[prev.length - 1],
     A = advice(nm, e[1], pv);
-  const pb = prev.length ? prev.reduce((m, x) => (est1RM(x.w, x.r, x.q) > est1RM(m.w, m.r, m.q) ? x : m)) : null,
+  const pb = prev.length
+      ? prev.reduce((m, x) => (est1RM(x.w, x.r, x.q) > est1RM(m.w, m.r, m.q) ? x : m))
+      : null,
     cur = recentMax(nm) || (pb ? est1RM(pb.w, pb.r, pb.q) : 0);
   if (!A || !pv) return { nm, R, first: true, pb };
   const T = { w: A.w, r: A.r },

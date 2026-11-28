@@ -1,4 +1,4 @@
-/* Built-in plan, quotes, meals, recipes and calorie goals */
+/* Built-in plan, meals, recipes and calorie goals */
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const clone = o => JSON.parse(JSON.stringify(o));
 const DEF_PLAN = [

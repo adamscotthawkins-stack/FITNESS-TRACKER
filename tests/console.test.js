@@ -74,7 +74,9 @@ test('the next set ignores a warm-up just logged', () => {
 test('one tap logs the planned next set', () => {
   const app = loadApp('2026-11-18T12:00:00');
   app.ctx.__s = [{ d: '2026-11-11', w: 100, r: 8 }];
-  app.run('S.log={Squat:__s};S.done={};S.alt={};draw=()=>{};startRest=()=>{};toast=()=>{};unlockAudio=()=>{}');
+  app.run(
+    'S.log={Squat:__s};S.done={};S.alt={};draw=()=>{};startRest=()=>{};toast=()=>{};unlockAudio=()=>{}'
+  );
   app.run('logPlanned(todayIdx,0)');
   const last = JSON.parse(app.run('JSON.stringify(S.log.Squat[S.log.Squat.length-1])'));
   assert.equal(last.d, '2026-11-18');

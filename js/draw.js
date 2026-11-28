@@ -26,7 +26,8 @@ ${S.pe ? planEditor(d) : `<div class="card"><div class="ed-head"><h2>${esc(PLAN[
     const pr = protTarget();
     h += `<h1>Meal plan</h1><div class="chips" style="margin:10px 0">${Object.keys(GOALS)
       .map(
-        g => `<button class="chip ${S.goal === g ? 'on' : ''}" onclick="setGoal('${g}')">${GOALS[g][0]}</button>`
+        g =>
+          `<button class="chip ${S.goal === g ? 'on' : ''}" onclick="setGoal('${g}')">${GOALS[g][0]}</button>`
       )
       .join('')}</div>
 <div class="card"><div class="ch"><span class="ci" style="--c:var(--orange)">${ICO.bowl}</span><div class="ct"><h2>Today’s fuel</h2><div class="mu sm">${GOALS[S.goal][0]} · ${t} kcal and ${pr}g protein a day</div></div></div><div class="macros">${mring(e, t, 'kcal', 'Calories', '#F97316', '#F43F5E')}${mring(prot(), pr, 'g', 'Protein', '#8B5CF6', '#4F46E5')}</div>

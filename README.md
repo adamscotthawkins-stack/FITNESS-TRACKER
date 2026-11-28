@@ -28,13 +28,15 @@ Everything is saved on the phone. Deleting the app from the home screen deletes 
 | Path | What it is |
 |---|---|
 | `index.html` | The page: loads the styles and scripts |
-| `css/app.css` | All styling (light and dark) |
+| `css/app.css` | All styling (one dark theme; tokens at the top) |
 | `js/*.js` | The app, one file per area (workout, progress, meals, backups and so on), loaded in the order listed in `index.html` |
 | `js/main.js` | Start-up code, runs last |
 | `manifest.webmanifest` | App name, icon and full-screen setting |
 | `sw.js` | Offline support |
 | `icons/` | Home-screen icons |
 | `tests/` | Automated tests for the training logic (`npm test`) |
+| `ARCHITECTURE.md` | How the code fits together: state, drawing, files, conventions |
+| `.prettierrc.json` | Code formatting settings |
 
 ## Updating
 

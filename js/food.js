@@ -103,7 +103,8 @@ async function offSuggest(q) {
     }
   } catch (e) {
     if (e && e.name === 'AbortError') return;
-    if (FOOD_SEARCH.q.trim() === q) FOOD_SEARCH.err = 'The food database couldn’t be reached, so only common foods are shown.';
+    if (FOOD_SEARCH.q.trim() === q)
+      FOOD_SEARCH.err = 'The food database couldn’t be reached, so only common foods are shown.';
   }
   if (FOOD_SEARCH.busy === q) FOOD_SEARCH.busy = null;
   renderSug();
