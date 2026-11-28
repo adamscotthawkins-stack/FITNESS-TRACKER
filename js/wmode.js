@@ -18,7 +18,7 @@ function wmDraw(anim){if(!WM)return;const p=PLAN[ti],E=p.e,i=WM.i,e=E[i],nm=act(
 su=(S.setup||{})[nm],last=i===E.length-1,left=E.filter((_,j)=>!S.done[dk(ti,j)]).length,fz=S.done['f'+wk+'-'+ti],pl=isBarbell(nm)?platesTxt(WM.w):'',u=isDB(nm)?'kg each':'kg',tb=WM.tab||'sets',td=L.filter(x=>x.d===today),h=howOf(nm);
 let body='';
 if(tb==='sets')body=`${weekChart(nm)}
-${A&&A.msg?`<div class="wm-tip">${ICO.sparkle}<div>${A.msg.replace(/^<br>/,'')}</div></div>`:pv?'':`<div class="wm-tip">${ICO.sparkle}<div>First time logging this lift. Pick a weight you can do for the target reps with 1–2 left in the tank.</div></div>`}
+${fbBanner(ti,i)}
 ${su?`<div class="note su" style="margin-top:10px"><span class="ni">${ICO.pin}</span><span class="nb"><b>Setup:</b> ${esc(su)}</span></div>`:''}
 ${setTable(ti,i,true)}
 <div class="wm-steps"><div class="wm-st"><label for="wmw">Weight · ${u}</label><input id="wmw" type="number" inputmode="decimal" step="0.5" value="${WM.w}" onchange="wmSet('w',this)" onfocus="this.select()"><div class="wm-pm"><button onclick="wmStep('w',-1)" aria-label="Less weight">${ICO.minus}</button><button onclick="wmStep('w',1)" aria-label="More weight">${ICO.plus}</button></div></div>
@@ -30,7 +30,7 @@ else{const days=[...new Set(L.map(x=>x.d))].sort().reverse().slice(0,8);let b=0;
 body=days.length?`<div class="hist-t">${days.map(d=>{const D=L.filter(x=>x.d===d),top=Math.max(...D.map(x=>x.w));return `<div class="hist-r"><div class="hist-d">${fmtD(d)}${prd[d]?' <span class="pill up">PR</span>':''}</div><div class="hist-s">${D.map(x=>`<span class="${isWarm(x,top)?'w':''}">${x.w}×${x.r}${x.q!=null?'@'+x.q:''}</span>`).join('')}</div></div>`}).join('')}</div><button class="btn ghost" style="width:100%;margin-top:12px" onclick="wmClose();S.cx=NK[${nk(nm)}];S.tab='progress';seg('lifts')">All history</button>`:'<div class="empty">No sets logged for this lift yet.</div>'}
 document.getElementById('wm').innerHTML=`<div class="wm-top"><button class="ib" onclick="wmClose()" aria-label="Close workout mode">${ICO.x}</button><div class="wm-con">${conBlock(true)}</div><button class="con-pill pill-btn" onclick="wmFinish()">${WM.fin?'Finish?':'Finish'}</button></div>
 <div class="wm-main ${anim||''}"><div class="wm-panel"><div class="wm-grip"></div>
-<div class="wm-head"><div class="wm-ct">${esc(p.n)} · ${i+1}/${E.length} · target ${esc(tgt)}${q&&q.g?' · superset '+q.g:''}${S.done[k]?' · done':''}</div><h1>${esc(nm)}</h1>${mgt(nm)}${nm!==e[0]?`<span class="mu sm"> · instead of ${esc(e[0])}</span>`:''}</div>
+<div class="wm-head"><div class="wm-ct">${esc(p.n)} · ${i+1}/${E.length} · target ${esc(tgt)}${q&&q.g?' · superset '+q.g:''}${S.done[k]?' · done':''}</div>${exHead(nm)}${nm!==e[0]?`<span class="mu sm"> · instead of ${esc(e[0])}</span>`:''}</div>
 <div class="wm-tabs" role="tablist">${[['sets','Sets'],['guide','Guide'],['hist','History']].map(t=>`<button role="tab" aria-selected="${tb===t[0]}" class="${tb===t[0]?'on':''}" onclick="wmTab('${t[0]}')">${t[1]}</button>`).join('')}</div>
 ${body}</div></div>
 <div class="wm-foot">${fz?'<div class="mu" style="text-align:center;padding:8px">This workout is complete.</div>':`<button class="btn wm-log" onclick="wmLog()">${ICO.check}<span>Log set ${td.length+1} · ${WM.w}${u==='kg'?'kg':'kg ea'} × ${WM.r}</span></button>`}

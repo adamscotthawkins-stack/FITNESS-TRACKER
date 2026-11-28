@@ -36,8 +36,8 @@ return `<div class="st"><div class="st-h"><span>#</span><span>Weight</span><span
 /* weekly chart for one lift: bars = working sets that week, line = best estimated max, with 100% and 75% lines */
 function liftWeeks(nm,n){const L=S.log[nm]||[],out=[];for(let k=n-1;k>=0;k--){const a=addDays(wk,-7*k),b=addDays(a,6),W=L.filter(x=>x.d>=a&&x.d<=b),top=W.length?Math.max(...W.map(x=>x.w)):0;
 out.push({a,m:W.length?Math.max(...W.map(x=>e1(x.w,x.r,x.q))):0,s:W.filter(x=>!isWarm(x,top)).length})}return out}
-/* weeks to show: from the first week this lift was logged (at least 4, at most 13) */
-function chartWeeks(nm){const L=S.log[nm]||[];if(!L.length)return 4;const f=L.reduce((m,x)=>x.d<m?x.d:m,L[0].d),mon=addDays(f,-((new Date(f+'T12:00').getDay()+6)%7));return Math.max(4,Math.min(13,Math.floor(dd(mon,wk)/7)+1))}
+/* weeks to show: the chosen range (3, 6 or 12 months), trimmed to when this lift was first logged (at least 4) */
+function chartWeeks(nm){const L=S.log[nm]||[];if(!L.length)return 4;const f=L.reduce((m,x)=>x.d<m?x.d:m,L[0].d),mon=addDays(f,-((new Date(f+'T12:00').getDay()+6)%7));return Math.max(4,Math.min(S.wcr||13,Math.floor(dd(mon,wk)/7)+1))}
 function weekChart(nm){const Wk=liftWeeks(nm,chartWeeks(nm));if(Wk.filter(w=>w.m).length<2)return '<div class="empty">Log this lift in two or more weeks to see your weekly max.</div>';
 const best=Math.max(...Wk.map(w=>w.m)),hi=Math.ceil(best*1.08/10)*10,lo=Math.max(0,Math.floor(Math.min(...Wk.filter(w=>w.m).map(w=>w.m))*.8/10)*10),ms=Math.max(4,...Wk.map(w=>w.s)),
 Wd=340,H=190,L=34,R=24,T=14,B=22,n=Wk.length,bw=(Wd-L-R)/n,X=i=>L+bw*i+bw/2,Y=v=>T+(hi-v)/(hi-lo)*(H-T-B),YS=s=>H-B-(s/ms)*(H-T-B)*.85,tk=nice(lo,hi,4);
@@ -50,5 +50,5 @@ s+=pts.map(q=>`<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="2.4" f
 s+=[...new Set([0,Math.round((n-1)/3),Math.round(2*(n-1)/3),n-1])].map(i=>`<text x="${X(i).toFixed(1)}" y="${H-6}" text-anchor="middle" class="ax">${fmtD(Wk[i].a)}</text>`).join('')+`<text x="${Wd-2}" y="${(YS(ms)+4).toFixed(1)}" text-anchor="end" class="ax">${ms}</text>`;
 const now=Wk.slice(-4).reduce((m,w)=>Math.max(m,w.m),0),then=Wk.slice(-8,-4).reduce((m,w)=>Math.max(m,w.m),0),ch=then?Math.round((now-then)/then*100):null,
 L3=(S.log[nm]||[]).filter(x=>x.d>=addDays(today,-91)),bs=L3.length?L3.reduce((m,x)=>e1(x.w,x.r,x.q)>e1(m.w,m.r,m.q)?x:m):null;
-return `<div class="wk-head"><span class="eyebrow">Weekly max</span><span class="wk-lg"><i class="ln"></i>Est. max <i class="br"></i>Sets</span></div>${s}</svg>
+return `<div class="wk-ctl"><span class="wk-pill">${ICO.chart}Weekly max</span><div class="seg sm" role="group" aria-label="Chart range">${[[13,'3M'],[26,'6M'],[52,'1Y']].map(r=>`<button class="${(S.wcr||13)===r[0]?'on':''}" onclick="S.wcr=${r[0]};save();draw()">${r[1]}</button>`).join('')}</div></div><div class="wk-head"><span class="wk-lg"><i class="ln"></i>Est. max <i class="br"></i>Sets</span></div>${s}</svg>
 <div class="e1r"><div><span class="g">Est 1RM</span><br><span>L3M best</span></div><div class="r"><span class="g">${Math.round(now*10)/10}kg${ch!=null?` (${ch>=0?'+':''}${ch}%)`:''}</span><br><span>${bs?bs.w+'kg × '+bs.r:'–'}</span></div></div>`}
